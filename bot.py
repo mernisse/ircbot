@@ -3,8 +3,11 @@
 import re
 import sys
 
-from twisted.internet import protocol
+from twisted.internet import protocol, reactor
+from twisted.internet.ssl import ClientContextFactory
 from twisted.words.protocols import irc
+
+import config
 
 class Bot(irc.IRCClient):
 	def _get_password(self):
@@ -63,3 +66,13 @@ class BotFactory(protocol.ClientFactory):
 		self.nickname = nickname
 		self.channels = channels
 		self.password = password
+
+if __name__ == '__main__':
+	if config.ssl:
+		reactor.connectSSL(config.host, config.port,
+			BotFactory(config.nickname, config.channels, config.password),
+			ClientContextFactory())
+	else:
+		reactor.connectTCP(config.host, config.port,
+			BotFactory(config.nickname, config.channels, config.password))
+	reactor.run()
