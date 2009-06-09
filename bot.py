@@ -14,6 +14,7 @@ from core import MODULES
 # bot modules
 import core
 import testmod
+import lpbugs
 
 class Bot(irc.IRCClient):
 	def _get_password(self):
@@ -29,8 +30,8 @@ class Bot(irc.IRCClient):
 	channels = property(_get_channels)
 
 	def _forMe(self, msg):
-		if re.search(r'^[[:space:]]*%s[[:space:]]*[:,]' % self.nickname, msg):
-			return re.sub(r'^[[:space:]]*%s[[:space:]]*[:,][[:space:]]*', msg)
+		if re.search(r'^\s*%s\s*[:,]' % self.nickname, msg):
+			return re.sub(r'^\s*%s\s*[:,]\s*' % self.nickname, '' ,msg)
 		return False
 
 	def signedOn(self):
@@ -44,7 +45,6 @@ class Bot(irc.IRCClient):
 				sys.modules[mod].joined(self, channel)
 
 	def userJoined(self, user, channel):
-		log('User %s joined channel %s.' % (user, channel))
 		for mod in MODULES:
 			if getattr(sys.modules[mod], 'userJoined', None):
 				sys.modules[mod].userJoined(self, user, channel)
@@ -52,7 +52,6 @@ class Bot(irc.IRCClient):
 	def privmsg(self, user, channel, msg):
 		nick = user.split('!', 1)[0]
 
-		err('MSG: %s %s %s' % (nick, channel, msg))
 		for mod in MODULES:
 			if getattr(sys.modules[mod], 'privmsg', None):
 				sys.modules[mod].privmsg(self, user, channel, msg)
@@ -84,7 +83,6 @@ class Bot(irc.IRCClient):
 
 	def action(self, user, channel, msg):
 		nick = user.split('!', 1)[0]
-		err('ACTION %s %s %s' % (nick, channel, msg))
 		for mod in MODULES:
 			if getattr(sys.modules[mod], 'action', None):
 				sys.modules[mod].action(self, user, channel, msg)

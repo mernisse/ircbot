@@ -20,6 +20,8 @@ Variables:
 	msg - message text of the event (if any)
 
 """
+from botlogger import err
+
 MODULES = []
 MODULES.append('core')
 
