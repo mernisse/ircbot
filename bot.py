@@ -8,6 +8,12 @@ from twisted.internet.ssl import ClientContextFactory
 from twisted.words.protocols import irc
 
 import config
+from botlogger import *
+from core import MODULES
+
+# bot modules
+import core
+import testmod
 
 class Bot(irc.IRCClient):
 	def _get_password(self):
@@ -32,14 +38,24 @@ class Bot(irc.IRCClient):
 			self.join(chan)
 
 	def joined(self, channel):
-		pass
+		log('Joined channel %s' % channel)
+		for mod in MODULES:
+			if getattr(sys.modules[mod], 'joined', None):
+				sys.modules[mod].joined(self, channel)
 
 	def userJoined(self, user, channel):
-		print user
-		print channel
+		log('User %s joined channel %s.' % (user, channel))
+		for mod in MODULES:
+			if getattr(sys.modules[mod], 'userJoined', None):
+				sys.modules[mod].userJoined(self, user, channel)
 
 	def privmsg(self, user, channel, msg):
 		nick = user.split('!', 1)[0]
+
+		err('MSG: %s %s %s' % (nick, channel, msg))
+		for mod in MODULES:
+			if getattr(sys.modules[mod], 'privmsg', None):
+				sys.modules[mod].privmsg(self, user, channel, msg)
 		
 		if channel != self.nickname:
 			msg = self._forMe(msg)
@@ -48,16 +64,30 @@ class Bot(irc.IRCClient):
 
 		matches = re.search(r'^\s*reload\s+([a-z0-9_]+)\s*$', msg)
 		if matches:
+			if not nick in config.owners:
+				err('%s tried to reload %s, not an owner' % (
+					nick,
+					module
+				))
+				return
+
 			module = matches.group(1)
 			if module not in sys.modules:
 				self.msg(nick, 'Module %s is not loaded.' % module)
 				return
 
+			log('Reloading module %s at request of %s' % (
+				module,
+				nick
+			))
 			reload(sys.modules[module])
 
-#	def action(self, user, channel, msg):
-#		nick = user.split('!', 1)[0]
-#		self.logger.log('* %s %s' % (nick, msg))
+	def action(self, user, channel, msg):
+		nick = user.split('!', 1)[0]
+		err('ACTION %s %s %s' % (nick, channel, msg))
+		for mod in MODULES:
+			if getattr(sys.modules[mod], 'action', None):
+				sys.modules[mod].action(self, user, channel, msg)
 
 class BotFactory(protocol.ClientFactory):
 	protocol = Bot
@@ -69,10 +99,12 @@ class BotFactory(protocol.ClientFactory):
 
 if __name__ == '__main__':
 	if config.ssl:
+		log('Connecting to %s:%i with SSL' % (config.host, config.port))
 		reactor.connectSSL(config.host, config.port,
 			BotFactory(config.nickname, config.channels, config.password),
 			ClientContextFactory())
 	else:
+		log('Connecting to %s:%i' % (config.host, config.port))
 		reactor.connectTCP(config.host, config.port,
 			BotFactory(config.nickname, config.channels, config.password))
 	reactor.run()
