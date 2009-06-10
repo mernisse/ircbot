@@ -6,7 +6,9 @@ Provide Launchpad integration for ircbot
 Keyword(s): lp, lpbugs, launchpad, ubuntubugs
 
 Requires: python-launchpadlib or similar.  Initial setup will be required
-by running this standalone.
+by running this standalone.  You will want to run (python ./lpbugs.py) this
+as the user that will run the irc bot as it stores the authentication creds
+in the $HOME of the user it is executed as.
 
 """
 import core

@@ -13,8 +13,9 @@ from core import MODULES
 
 # bot modules
 import core
-import testmod
 import lpbugs
+import polls
+
 
 class Bot(irc.IRCClient):
 	def _get_password(self):
@@ -31,7 +32,10 @@ class Bot(irc.IRCClient):
 
 	def _forMe(self, msg):
 		if re.search(r'^\s*%s\s*[:,]' % self.nickname, msg):
-			return re.sub(r'^\s*%s\s*[:,]\s*' % self.nickname, '' ,msg)
+			return re.sub(r'^\s*%s\s*[:,]\s*' % self.nickname, 
+				'',
+				msg
+			)
 		return False
 
 	def signedOn(self):
@@ -99,10 +103,11 @@ if __name__ == '__main__':
 	if config.ssl:
 		log('Connecting to %s:%i with SSL' % (config.host, config.port))
 		reactor.connectSSL(config.host, config.port,
-			BotFactory(config.nickname, config.channels, config.password),
-			ClientContextFactory())
+			BotFactory(config.nickname, config.channels, 
+			config.password), ClientContextFactory())
 	else:
 		log('Connecting to %s:%i' % (config.host, config.port))
 		reactor.connectTCP(config.host, config.port,
-			BotFactory(config.nickname, config.channels, config.password))
+			BotFactory(config.nickname, config.channels, 
+			config.password))
 	reactor.run()
