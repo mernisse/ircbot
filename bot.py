@@ -24,7 +24,6 @@ import variables
 import autoop
 
 import ascii
-import archer
 import besomebody
 import bugs
 import remotecontrol
