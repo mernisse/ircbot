@@ -1,1 +1,10 @@
 *.pyc
+config.py
+private.py
+remotecontrol.py
+ascii/
+btsutils/
+fates.json
+mybrain.pkl
+nethack.nki
+nick/

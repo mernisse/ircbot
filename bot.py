@@ -11,13 +11,42 @@ import config
 from botlogger import *
 from core import MODULES
 
-# bot modules
-import core
-import lpbugs
-import polls
+# bot modules - callbacks should be registered at import so the import order
+# here is also the execution order.
 
+# core should always be first.
+import core
+
+# this should happen before everything else.
+import nethack
+
+import variables
+
+import ascii
+import archer
+import besomebody
+import bugs
+import remotecontrol
+import sms
+import uberurls
+
+# this should happen last
+import hateball
 
 class Bot(irc.IRCClient):
+	def msg(self, user, message, length=None, only=None):
+		''' Overload irc.IRCClient.msg() so that we can by default
+		break out of a callback loop if only is set to True
+
+		This is mostly to make hateball work the way I want it to
+		work.
+
+		'''
+		
+		irc.IRCClient.msg(self, user, message, length)
+		if only:
+			raise core.StopCallBacks
+		
 	def _get_password(self):
 		return self.factory.password
 	password = property(_get_password)
@@ -56,10 +85,13 @@ class Bot(irc.IRCClient):
 	def privmsg(self, user, channel, msg):
 		nick = user.split('!', 1)[0]
 
-		for mod in MODULES:
-			if getattr(sys.modules[mod], 'privmsg', None):
-				sys.modules[mod].privmsg(self, user, channel, msg)
-		
+		try:
+			for mod in MODULES:
+				if getattr(sys.modules[mod], 'privmsg', None):
+					sys.modules[mod].privmsg(self, user, channel, msg)
+		except core.StopCallBacks:
+			pass
+
 		if channel != self.nickname:
 			msg = self._forMe(msg)
 			if not msg:

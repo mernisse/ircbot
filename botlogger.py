@@ -19,3 +19,4 @@ def err(s):
 	syslog(LOG_ERR, s)
 	
 openlog(os.path.basename(sys.argv[0]), LOG_PID)
+syslog(LOG_INFO, 'logging started.')
