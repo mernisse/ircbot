@@ -93,16 +93,16 @@ class StopCallBacks(Exception):
 
 
 def joined(self, channel):
-	return False
+	pass
 
 def userJoined(self, user, channel):
-	return False
+	pass
 
 def privmsg(self, user, channel, msg):
-	return False
+	pass
 
 def action(self, user, channel, msg):
-	return False
+	pass
 
 def register_module(module):
 	global MODULES
