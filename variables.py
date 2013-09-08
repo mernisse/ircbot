@@ -61,7 +61,4 @@ def privmsg(self, user, channel, msg):
 		core.brain[speaker].pop(key)
 		self.msg(dst, 'unset %s.' % key, only=True)
 
-		
-
-		
 core.register_module(__name__)

@@ -21,6 +21,7 @@ import core
 import nethack
 
 import variables
+import autoop
 
 import ascii
 import archer
@@ -34,15 +35,98 @@ import uberurls
 import hateball
 
 class Bot(irc.IRCClient):
+	# extend the irc.IRCClient to support deferred names listing.
+	# Derived from: http://stackoverflow.com/questions/6671620/list-users-in-irc-channel-using-twisted-python-irc-framework
+	_names = {}
+	_whois = {}
+
+	def names(self, channel):
+		''' Get a userlist for the channel, on reply namesReply() will
+		be called on all the modules.
+
+		'''
+		channel = channel.lower()
+		if channel not in self._names:
+			self._names[channel] = []
+
+		self.sendLine("NAMES %s" % channel)
+
+	def irc_RPL_NAMREPLY(self, prefix, params):
+		''' Handle pagenated NAMES reply '''
+		channel = params[2].lower()
+		nicklist = params[3].split(' ')
+
+		if channel not in self._names:
+			return
+
+		for nick in nicklist:
+			if nick in self._names[channel]:
+				continue
+
+			self._names[channel].append(nick)
+
+	def irc_RPL_ENDOFNAMES(self, prefix, params):
+		''' End of pagenated NAMES reply '''
+		channel = params[1].lower()
+		if channel not in self._names:
+			return
+		
+		for mod in MODULES:
+			if not getattr(sys.modules[mod], 'namesReply', None):
+				continue
+
+			sys.modules[mod].namesReply(self,
+				channel,
+				self._names[channel])
+
+	def whois(self, user, server=None):
+		self._whois[user] = {}
+
+		if user.startswith('@'):
+			user = user[1:]
+
+		irc.IRCClient.whois(self,user, server)
+
+	def irc_RPL_WHOISUSER(self, prefix, params):
+		user = params[1].lower()
+		if not user in self._whois:
+			return
+
+		self._whois[user].update({
+			'username': params[2],
+			'hostname': params[3]
+		})
+
+	def irc_RPL_ENDOFWHOIS(self, prefix, params):
+		user = params[1].lower()
+		if user not in self._whois:
+			return
+		
+		for mod in MODULES:
+			if not getattr(sys.modules[mod], 'whoisReply', None):
+				continue
+
+			sys.modules[mod].whoisReply(self,
+				user,
+				self._whois[user])
+		
+
+	def irc_unknown(self, prefix, command, params):
+		# Uncomment to log any unhandled replies from the server.
+		# log('UNKN: prefix=%s, command=%s, params=%s' % (
+		#	prefix, command, params))
+		pass
+
 	def msg(self, user, message, length=None, only=None):
-		''' Overload irc.IRCClient.msg() so that we can by default
-		break out of a callback loop if only is set to True
+		''' Overload irc.IRCClient.msg() so that we can break out of 
+		a callback loop if only is set to True.
 
 		This is mostly to make hateball work the way I want it to
 		work.
 
 		'''
 		
+		# I don't get why super(Bot, self).msg() doesn't work here...
 		irc.IRCClient.msg(self, user, message, length)
 		if only:
 			raise core.StopCallBacks
@@ -115,6 +199,10 @@ class Bot(irc.IRCClient):
 				module,
 				nick
 			))
+
+			if module in MODULES:
+				del(MODULES[module])
+
 			reload(sys.modules[module])
 
 	def action(self, user, channel, msg):
@@ -122,6 +210,20 @@ class Bot(irc.IRCClient):
 		for mod in MODULES:
 			if getattr(sys.modules[mod], 'action', None):
 				sys.modules[mod].action(self, user, channel, msg)
+
+	def modeChanged(self, user, channel, set, modes, args):
+		nick = user.split('!', 1)[0]
+		for mod in MODULES:
+			if not getattr(sys.modules[mod], 'modeChanged', None):
+				continue
+
+			sys.modules[mod].modeChanged(self,
+				user,
+				channel,
+				set,
+				modes,
+				args)
+		
 
 class BotFactory(protocol.ClientFactory):
 	protocol = Bot

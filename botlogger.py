@@ -12,11 +12,11 @@ import os
 from syslog import *
 
 def log(s):
-	syslog(LOG_INFO, s)
+	syslog(LOG_INFO, str(s))
 
 def err(s):
 	sys.stderr.write('%s\n' % s)
-	syslog(LOG_ERR, s)
+	syslog(LOG_ERR, str(s))
 	
 openlog(os.path.basename(sys.argv[0]), LOG_PID)
 syslog(LOG_INFO, 'logging started.')
