@@ -19,7 +19,7 @@ ARCHER_QUOTES = []
 def archer():
 	''' ...call Kenny Loggins... 'cuz you're in the Danger Zone. '''
 	global ARCHER_QUOTES
-	return ARCHER_QUOTES[randint(0, len(ARCHER_QUOTES)]
+	return ARCHER_QUOTES[randint(0, len(ARCHER_QUOTES) -1)]
 
 def bhanat():
 	''' /me pours a little out for his homies who are not here. '''
