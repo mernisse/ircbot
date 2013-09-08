@@ -1,4 +1,5 @@
 *.pyc
+autoop.conf
 config.py
 private.py
 remotecontrol.py
