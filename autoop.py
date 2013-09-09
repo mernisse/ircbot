@@ -52,31 +52,14 @@ def check_masks(userhost):
 
 	return False
 
-def userJoined(self, user, channel):
-	self.whois(user)
-
-def joined(self, channel):
-	# when we join a channel look around for people to op.
-	self.names(channel)
-
-def namesReply(self, channel, nicklist):
-	for nick in nicklist:
-		self.whois(nick)
-
 def whoisReply(self, nick, userinfo):
 	userhost = "%s@%s" % (userinfo['username'], userinfo['hostname'])
 	if not check_masks(userhost):
 		return
 
 	for channel in self.channels:
-		self.mode(channel, True, "o", user=nick)
-
-def modeChanged(self, user, channel, set, modes, args):
-	if not channel.startswith("#"):
-		# if the channel doesn't start with a hash then it is a user
-		# mode change or a server mode change not a channel mode change.
-		return
-
-	self.names(channel)
+		if nick in self.chatters[channel]['users']:
+			log('OP %s in %s' % (nick, channel))
+			self.mode(channel, True, "o", user=nick)
 
 core.register_module(__name__)

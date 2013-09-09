@@ -1,15 +1,32 @@
 #!/usr/bin/python -tt
+''' bot.py
 
+This is the main module of the IRC robot.  I envision him as Marvin, The
+Paranoid Android.
+
+He is built on the Twisted framework.
+
+The bot accepts the following commands:
+reload <module> - This will reload the python module specified.
+join <channel> - This will join the specified channel.
+leave <channel> - This will part the specified channel.
+
+Commands must be issued via a PRIVMSG to the bot from someone listed in
+config.owners.
+
+Marvin has a brain the size of a planet, it is implemented in core.py.
+
+'''
+import config
 import re
 import sys
+import time
 
+from botlogger import *
 from twisted.internet import protocol, reactor, task
 from twisted.internet.ssl import ClientContextFactory
 from twisted.python.rebuild import rebuild
 from twisted.words.protocols import irc
-
-import config
-from botlogger import *
 
 # bot modules - callbacks should be registered at import so the import order
 # here is also the execution order.
@@ -38,15 +55,44 @@ import topic
 import hateball
 
 class Bot(irc.IRCClient):
-	# extend the irc.IRCClient to support deferred names listing.
-	# Derived from: http://stackoverflow.com/questions/6671620/list-users-in-irc-channel-using-twisted-python-irc-framework
 	_names = {}
 	_whois = {}
+	chatters = {}
 	task = None
 
+	def _forMe(self, msg):
+		''' determine if a message was sent to me, if it was strip
+		my nick off the front of it and just return the payload.
+
+		'''
+		if re.search(r'^\s*%s\s*[:,]' % self.nickname, msg):
+			return re.sub(
+				r'^\s*%s\s*[:,]\s*' % self.nickname, 
+				'',
+				msg)
+		return False
+
+	#
+	# Factory properties
+	#
+	def _get_password(self):
+		return self.factory.password
+	password = property(_get_password)
+
+	def _get_nickname(self):
+		return self.factory.nickname
+	nickname = property(_get_nickname)
+
+	def _get_channels(self):
+		return self.factory.channels
+	channels = property(_get_channels)
+
+	#
+	# Actions
+	#
 	def names(self, channel):
 		''' Get a userlist for the channel, on reply namesReply() will
-		be called on all the modules.
+		be called.
 
 		'''
 		channel = channel.lower()
@@ -54,72 +100,6 @@ class Bot(irc.IRCClient):
 			self._names[channel] = []
 
 		self.sendLine("NAMES %s" % channel)
-
-	def irc_RPL_NAMREPLY(self, prefix, params):
-		''' Handle pagenated NAMES reply '''
-		channel = params[2].lower()
-		nicklist = params[3].split(' ')
-
-		if channel not in self._names:
-			return
-
-		for nick in nicklist:
-			if nick in self._names[channel]:
-				continue
-
-			self._names[channel].append(nick)
-
-	def irc_RPL_ENDOFNAMES(self, prefix, params):
-		''' End of pagenated NAMES reply '''
-		channel = params[1].lower()
-		if channel not in self._names:
-			return
-		
-		for mod in core.MODULES:
-			if not getattr(sys.modules[mod], 'namesReply', None):
-				continue
-
-			sys.modules[mod].namesReply(self,
-				channel,
-				self._names[channel])
-
-	def whois(self, user, server=None):
-		self._whois[user] = {}
-
-		if user.startswith('@'):
-			user = user[1:]
-
-		irc.IRCClient.whois(self,user, server)
-
-	def irc_RPL_WHOISUSER(self, prefix, params):
-		user = params[1].lower()
-		if not user in self._whois:
-			return
-
-		self._whois[user].update({
-			'username': params[2],
-			'hostname': params[3]
-		})
-
-	def irc_RPL_ENDOFWHOIS(self, prefix, params):
-		user = params[1].lower()
-		if user not in self._whois:
-			return
-		
-		for mod in core.MODULES:
-			if not getattr(sys.modules[mod], 'whoisReply', None):
-				continue
-
-			sys.modules[mod].whoisReply(self,
-				user,
-				self._whois[user])
-		
-
-	def irc_unknown(self, prefix, command, params):
-		# Uncomment to log any unhandled replies from the server.
-		# log('UNKN: prefix=%s, command=%s, params=%s' % (
-		#	prefix, command, params))
-		pass
 
 	def msg(self, user, message, length=None, only=None):
 		''' Overload irc.IRCClient.msg() so that we can break out of 
@@ -134,33 +114,57 @@ class Bot(irc.IRCClient):
 		irc.IRCClient.msg(self, user, message, length)
 		if only:
 			raise core.StopCallBacks
-		
-	def _get_password(self):
-		return self.factory.password
-	password = property(_get_password)
 
-	def _get_nickname(self):
-		return self.factory.nickname
-	nickname = property(_get_nickname)
+	#
+	# Event Callbacks.
+	#
+	def action(self, user, channel, msg):
+		''' Called on a CTCP ACTION '''
+		nick = user.split('!', 1)[0]
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'action', None):
+				sys.modules[mod].action(self,
+					user,
+					channel,
+					msg)
 
-	def _get_channels(self):
-		return self.factory.channels
-	channels = property(_get_channels)
-
-	def _forMe(self, msg):
-		if re.search(r'^\s*%s\s*[:,]' % self.nickname, msg):
-			return re.sub(r'^\s*%s\s*[:,]\s*' % self.nickname, 
-				'',
-				msg
-			)
-		return False
-
-	def signedOn(self):
-		for chan in self.channels:
-			self.join(chan)
 
 	def joined(self, channel):
-		log('Joined channel %s' % channel)
+		''' Called when we join a channel. '''
+		if not channel in self.channels:
+			self.channels.append(channel)
+
+		self.chatters[channel] = {'users': {}}
+		self.names(channel)
+
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'joined', None):
+				sys.modules[mod].joined(self, channel)
+
+	def left(self, channel):
+		''' Called when we leave a channel '''
+		log('Left channel %s' % channel)
+		self.chatters.pop(channel)
+		self.channels.remove(channel)
+
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'left', None):
+				sys.modules[mod].left(self, channel)
+
+	def noticed(self, user, channel, message):
+		''' Called when we receive a NOTICE, per the RFC
+		we MUST NEVER programatically respond to a notice.
+
+		No module callbacks are called from this.
+
+		'''
+		log('NOTICE - %s in %s: %s' % (
+			user, channel, message))
+
+
+	def signedOn(self):
+		''' Called upon successful connection to the server '''
+		log('Joining %s' % ",".join(self.channels))
 
 		#
 		# we want to fire a callback every 5 minutes, just in case we
@@ -170,14 +174,67 @@ class Bot(irc.IRCClient):
 			self.task = task.LoopingCall(self.periodic)
 			self.task.start(5 * 60)
 
-		for mod in core.MODULES:
-			if getattr(sys.modules[mod], 'joined', None):
-				sys.modules[mod].joined(self, channel)
+		for chan in self.channels:
+			self.join(chan)
 
 	def userJoined(self, user, channel):
+		''' Called when a user joins a channel. '''
+		self.chatters[channel]['users'].update({ 
+			user: {}})
+		self.whois(user)
+
 		for mod in core.MODULES:
 			if getattr(sys.modules[mod], 'userJoined', None):
 				sys.modules[mod].userJoined(self, user, channel)
+
+
+	def userKicked(self, kickee, channel, kicker, message):
+		''' Called when a user KICKs another user. '''
+		log('observed %s kick %s from %s for %s' % (
+			kicker, kickee, channel, message))
+
+		self.chatters[channel]['users'].pop(kickee)
+
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'userKicked', None):
+				sys.modules[mod].userKicked(self,
+					kickee,
+					channel,
+					kicker,
+					message)
+
+	def userLeft(self, user, channel):
+		''' Called when a user PARTs a channel. '''
+		try:
+			self.chatters[channel]['users'].pop(user)
+		except KeyError, e:
+			err('mystery user %s left %s' % (user, channel))
+		
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'userLeft', None):
+				sys.modules[mod].userLeft(self, user, channel)
+
+	def userQuit(self, user, message):
+		''' Called when a user QUITs IRC. '''
+		for channel in self.chatters:
+			if user in self.chatters[channel]:
+				self.chatters[channel]['users'].pop(user)
+
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'userQuit', None):
+				sys.modules[mod].userQuit(self, user, channel)
+
+	def userRenamed(self, oldname, newname):
+		''' Called when a user changes his/her nick. '''
+		for chan in self.chatters:
+			oldchatter = self.chatters[chan]['users'].pop(oldname)
+			self.chatters[chan]['users'].update(oldchatter)
+
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'userRenamed', None):
+				sys.modules[mod].userRenamed(self,
+					oldname,
+					newname)
 
 	def privmsg(self, user, channel, msg):
 		nick = user.split('!', 1)[0]
@@ -195,16 +252,16 @@ class Bot(irc.IRCClient):
 			if not msg:
 				return
 
+		#
+		# bot control actions are only honored from owners.
+		#
+		if not nick in config.owners:
+			err('%s tried to command me!' % nick)
+			self.msg(nick, 'You are not an owner.')
+			return
+
 		matches = re.search(r'^\s*reload\s+([a-z0-9_]+)\s*$', msg)
 		if matches:
-			if not nick in config.owners:
-				err('%s tried to reload %s, not an owner' % (
-					nick,
-					module
-				))
-				self.msg(nick, 'You are not an owner.')
-				return
-
 			module = matches.group(1)
 			if module not in sys.modules:
 				self.msg(nick, 'Module %s is not loaded.' % (
@@ -220,14 +277,35 @@ class Bot(irc.IRCClient):
 			# built in reload().
 			rebuild(sys.modules[module])
 			self.msg(nick, 'Module %s reloaded.' % (module))
+			return
 
-	def action(self, user, channel, msg):
-		nick = user.split('!', 1)[0]
-		for mod in core.MODULES:
-			if getattr(sys.modules[mod], 'action', None):
-				sys.modules[mod].action(self, user, channel, msg)
+		matches = re.search(r'^\s*join\s+(#[a-z0-9_]+)\s*$', msg)
+		if matches:
+			channel = matches.group(1)
+			if channel in self.chatters:
+				self.msg(nick, 'Already in %s' % channel)
+				return
+
+			self.join(channel)
+			self.msg(nick, 'Joined %s' % channel)
+			return
+
+		matches = re.search(r'^\s*leave\s+(#[a-z0-9_]+)\s*$', msg)
+		if matches:
+			channel = matches.group(1)
+			if channel not in self.chatters:
+				self.msg(nick, 'Not in %s' % channel)
+				return
+			self.leave(channel, '%s has banished me.' % nick)
+			self.msg(nick, 'Left %s' % channel)
+
+		matches = re.search(r'^\s*spy\s*$', msg)
+		if matches:
+			self.msg(nick, 'Chatters:\n%s' % str(self.chatters))
+			return
 
 	def modeChanged(self, user, channel, set, modes, args):
+		''' Called on a server/user/channel mode change '''
 		nick = user.split('!', 1)[0]
 		for mod in core.MODULES:
 			if not getattr(sys.modules[mod], 'modeChanged', None):
@@ -241,6 +319,7 @@ class Bot(irc.IRCClient):
 				args)
 
 	def topicUpdated(self, user, channel, newtopic):
+		''' Called when a channel topic is updated. '''
 		for mod in core.MODULES:
 			if not getattr(sys.modules[mod], 'topicUpdated', None):
 				continue
@@ -251,12 +330,104 @@ class Bot(irc.IRCClient):
 				newtopic)
 
 	def periodic(self):
-		# Periodically save the Brain
-		core.brain._save()
-
+		''' This is called every 5 minutes. '''
 		for mod in core.MODULES:
 			if getattr(sys.modules[mod], 'periodic', None):
 				sys.modules[mod].periodic(self)
+	#
+	# IRC Protocol Handler Callbacks.
+	#
+	def irc_RPL_NAMREPLY(self, prefix, params):
+		''' Handle the NAMES reply. '''
+		channel = params[2].lower()
+		nicklist = params[3].split(' ')
+
+		if channel not in self.chatters:
+			return
+
+		for nick in nicklist:
+			if nick in self.chatters[channel]['users']:
+				continue
+
+			if nick.startswith('@'):
+				nick = nick[1:]
+
+			self.chatters[channel]['users'].update({ 
+				nick: {}})
+
+	def irc_RPL_ENDOFNAMES(self, prefix, params):
+		''' Called when a NAMES reply is finished '''
+		channel = params[1].lower()
+
+		if channel not in self.chatters:
+			err('NAMES reply for %s which is not in chatters' % (
+				channel))
+			return
+
+		for user in self.chatters[channel]['users']:
+			self.whois(user)
+
+		for mod in core.MODULES:
+			if not getattr(sys.modules[mod], 'namesReply', None):
+				continue
+
+			sys.modules[mod].namesReply(self,
+				channel,
+				self.chatters[channel]['users'].keys())
+
+	def irc_RPL_WHOISIDLE(self, prefix, params):
+		''' Called for the IDLE portion of the WHOIS reply '''
+		user = params[1].lower()
+
+		for channel in self.chatters:
+			if not user in self.chatters[channel]['users']:
+				continue
+
+			info = {
+				'idle': params[2],
+				'signOn': params[3],
+			}
+			self.chatters[channel]['users'][user].update(info)
+
+	def irc_RPL_WHOISUSER(self, prefix, params):
+		''' Called for the USER portion of the WHOIS reply '''
+		user = params[1].lower()
+
+		for channel in self.chatters:
+			if not user in self.chatters[channel]['users']:
+				continue
+
+			info = {
+				'username': params[2],
+				'hostname': params[3],
+				'realname': params[5],
+			}
+			self.chatters[channel]['users'][user].update(info)
+
+	def irc_RPL_ENDOFWHOIS(self, prefix, params):
+		''' Called when a WHOIS reply is finished '''
+		user = params[1].lower()
+
+		for channel in self.chatters:
+			if not user in self.chatters[channel]:
+				continue
+
+			info = self.chatters[channel]['users'][user]
+			break
+		else:
+			return
+
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'whoisReply', None):
+				sys.modules[mod].whoisReply(self, user, info)
+		
+	
+	def irc_unknown(self, prefix, command, params):
+		''' Called on any unhandled server replies '''
+		# Uncomment to log any unhandled replies from the server.
+		# log('UNKN: prefix=%s, command=%s, params=%s' % (
+		#	prefix, command, params))
+		pass
 
 class BotFactory(protocol.ClientFactory):
 	protocol = Bot
@@ -265,17 +436,26 @@ class BotFactory(protocol.ClientFactory):
 		self.nickname = nickname
 		self.channels = channels
 		self.password = password
+	
+	def connectionLost(self, connector, reason):
+		err('Disconnected (%s), retrying...' % reason)
+		time.sleep(10)
+		connector.connect()
+
+	def connectionFailed(self, connector, reason):
+		err('Connection failed, %s.  Exiting.' % reason)
+		sys.exit(127)
 
 if __name__ == '__main__':
 	if config.ssl:
 		log('Connecting to %s:%i with SSL' % (config.host, config.port))
 		reactor.connectSSL(config.host, config.port,
-			BotFactory(config.nickname, config.channels, 
+			BotFactory(config.nickname, config.channels,
 			config.password), ClientContextFactory())
 	else:
 		log('Connecting to %s:%i' % (config.host, config.port))
 		reactor.connectTCP(config.host, config.port,
-			BotFactory(config.nickname, config.channels, 
+			BotFactory(config.nickname, config.channels,
 			config.password))
 
 	reactor.run()
