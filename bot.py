@@ -162,9 +162,10 @@ class Bot(irc.IRCClient):
 		# we want to fire a callback every 5 minutes, just in case we
 		# want that for various module functionality.
 		#
-		self.task = task.LoopingCall(self.periodic)
-		self.task.start(5 * 60)
-#, now=False)
+		if not self.task:
+			self.task = task.LoopingCall(self.periodic)
+			self.task.start(5 * 60)
+
 		for mod in core.MODULES:
 			if getattr(sys.modules[mod], 'joined', None):
 				sys.modules[mod].joined(self, channel)
@@ -197,6 +198,7 @@ class Bot(irc.IRCClient):
 					nick,
 					module
 				))
+				self.msg(nick, 'You are not an owner.')
 				return
 
 			module = matches.group(1)
@@ -211,6 +213,7 @@ class Bot(irc.IRCClient):
 			))
 
 			reload(sys.modules[module])
+			self.msg(nick, 'Module %s reloaded.' % (module))
 
 	def action(self, user, channel, msg):
 		nick = user.split('!', 1)[0]
@@ -242,6 +245,9 @@ class Bot(irc.IRCClient):
 				newtopic)
 
 	def periodic(self):
+		# Periodically save the Brain
+		core.brain._save()
+
 		for mod in core.MODULES:
 			if getattr(sys.modules[mod], 'periodic', None):
 				sys.modules[mod].periodic(self)
