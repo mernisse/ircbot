@@ -23,7 +23,6 @@ def load_calendar():
 	global EVENTS
 
 	try:
-		count = 0
 		fd = open('calendar')
 		for line in fd:
 			matches = re.search(r'^(\d+)/(\d+)\s+(.*)', line, re.I)
@@ -35,7 +34,7 @@ def load_calendar():
 			event = matches.group(3)
 
 			mmdd = "%s-%s" % ( month, day )
-			count += 1
+
 			if not mmdd in EVENTS:
 				EVENTS[mmdd] = [event]
 			else:
@@ -47,9 +46,8 @@ def load_calendar():
 		err('topic - failed to parse calendar: %s' % str(e))
 		return
 
-	days = len(EVENTS.keys())
-	log('topic - loaded %i events for %i days' % (count, days))
-
+	log('topic loaded events.')
+	
 def emit_event(month, day):
 	''' return an event string, if nothing is in the calendar file for
 	today, emit a default string.
@@ -101,7 +99,7 @@ def topicUpdated(self, user, channel, topic):
 
 def periodic(self):
 	''' get all the topics for all the channels we are joined to. '''
-	for channel in self.channels:	
+	for channel in self.chatters:	
 		self.topic(channel)
 
 load_calendar()
