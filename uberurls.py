@@ -164,6 +164,9 @@ def privmsg(self, user, channel, msg):
 
 			self.msg(channel, msg, only=True)
 
+	except core.StopCallBacks:
+		raise
+
 	except Exception, e:
 		err('uberurls - ERROR: %s' % (
 			str(e)
