@@ -56,12 +56,9 @@ def whoisReply(self, nick, userinfo):
 	if nick == self.nickname:
 		return
 
-	userhost = "%s!%s@%s" % (nick,
-		userinfo['username'],
-		userinfo['hostname'])
+	userhost = "%s@%s" % (userinfo['username'], userinfo['hostname'])
 
 	if not check_masks(userhost):
-		err('nick %s unauthorized' % nick)
 		return
 
 	for channel in self.chatters:
