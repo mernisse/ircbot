@@ -57,7 +57,7 @@ def emit_event(month, day):
 	mmdd = "%s-%s" % (month, day)
 
 	if not mmdd in EVENTS:
-		return '%s\%s Nothing ever happens.' % (month, day)
+		return '%s/%s Nothing ever happens.' % (month, day)
 
 	return "%s/%s %s" % (
 		month,
