@@ -96,9 +96,6 @@ class Bot(irc.IRCClient):
 
 		'''
 		channel = channel.lower()
-		if channel not in self._names:
-			self._names[channel] = []
-
 		self.sendLine("NAMES %s" % channel)
 
 	def msg(self, user, message, length=None, only=None):
@@ -151,6 +148,24 @@ class Bot(irc.IRCClient):
 			if getattr(sys.modules[mod], 'left', None):
 				sys.modules[mod].left(self, channel)
 
+	def modeChanged(self, user, channel, set, modes, args):
+		''' Called on a server/user/channel mode change '''
+		nick = user.split('!', 1)[0]
+
+		if channel.startswith("#"):
+			self.names(channel)
+
+		for mod in core.MODULES:
+			if not getattr(sys.modules[mod], 'modeChanged', None):
+				continue
+
+			sys.modules[mod].modeChanged(self,
+				user,
+				channel,
+				set,
+				modes,
+				args)
+
 	def noticed(self, user, channel, message):
 		''' Called when we receive a NOTICE, per the RFC
 		we MUST NEVER programatically respond to a notice.
@@ -161,82 +176,14 @@ class Bot(irc.IRCClient):
 		log('NOTICE - %s in %s: %s' % (
 			user, channel, message))
 
-
-	def signedOn(self):
-		''' Called upon successful connection to the server '''
-		log('Joining %s' % ",".join(self.channels))
-
-		#
-		# we want to fire a callback every 5 minutes, just in case we
-		# want that for various module functionality.
-		#
-		if not self.task:
-			self.task = task.LoopingCall(self.periodic)
-			self.task.start(5 * 60)
-
-		for chan in self.channels:
-			self.join(chan)
-
-	def userJoined(self, user, channel):
-		''' Called when a user joins a channel. '''
-		self.chatters[channel]['users'].update({ 
-			user: {}})
-		self.whois(user)
-
+	def periodic(self):
+		''' This is called every 5 minutes. '''
 		for mod in core.MODULES:
-			if getattr(sys.modules[mod], 'userJoined', None):
-				sys.modules[mod].userJoined(self, user, channel)
-
-
-	def userKicked(self, kickee, channel, kicker, message):
-		''' Called when a user KICKs another user. '''
-		log('observed %s kick %s from %s for %s' % (
-			kicker, kickee, channel, message))
-
-		self.chatters[channel]['users'].pop(kickee)
-
-		for mod in core.MODULES:
-			if getattr(sys.modules[mod], 'userKicked', None):
-				sys.modules[mod].userKicked(self,
-					kickee,
-					channel,
-					kicker,
-					message)
-
-	def userLeft(self, user, channel):
-		''' Called when a user PARTs a channel. '''
-		try:
-			self.chatters[channel]['users'].pop(user)
-		except KeyError, e:
-			err('mystery user %s left %s' % (user, channel))
-		
-		for mod in core.MODULES:
-			if getattr(sys.modules[mod], 'userLeft', None):
-				sys.modules[mod].userLeft(self, user, channel)
-
-	def userQuit(self, user, message):
-		''' Called when a user QUITs IRC. '''
-		for channel in self.chatters:
-			if user in self.chatters[channel]:
-				self.chatters[channel]['users'].pop(user)
-
-		for mod in core.MODULES:
-			if getattr(sys.modules[mod], 'userQuit', None):
-				sys.modules[mod].userQuit(self, user, channel)
-
-	def userRenamed(self, oldname, newname):
-		''' Called when a user changes his/her nick. '''
-		for chan in self.chatters:
-			oldchatter = self.chatters[chan]['users'].pop(oldname)
-			self.chatters[chan]['users'].update(oldchatter)
-
-		for mod in core.MODULES:
-			if getattr(sys.modules[mod], 'userRenamed', None):
-				sys.modules[mod].userRenamed(self,
-					oldname,
-					newname)
+			if getattr(sys.modules[mod], 'periodic', None):
+				sys.modules[mod].periodic(self)
 
 	def privmsg(self, user, channel, msg):
+		''' Called when the bot receives a MSG '''
 		nick = user.split('!', 1)[0]
 
 		try:
@@ -244,6 +191,7 @@ class Bot(irc.IRCClient):
 				if getattr(sys.modules[mod], 'privmsg', None):
 					sys.modules[mod].privmsg(self,
 						user, channel, msg)
+
 		except core.StopCallBacks:
 			pass
 
@@ -304,23 +252,20 @@ class Bot(irc.IRCClient):
 			self.msg(nick, 'Chatters:\n%s' % str(self.chatters))
 			return
 
-	def modeChanged(self, user, channel, set, modes, args):
-		''' Called on a server/user/channel mode change '''
-		nick = user.split('!', 1)[0]
+	def signedOn(self):
+		''' Called upon successful connection to the server '''
+		log('Joining %s' % ",".join(self.channels))
 
-		if channel.startswith("#"):
-			self.names(channel)
+		#
+		# we want to fire a callback every 5 minutes, just in case we
+		# want that for various module functionality.
+		#
+		if not self.task:
+			self.task = task.LoopingCall(self.periodic)
+			self.task.start(5 * 60)
 
-		for mod in core.MODULES:
-			if not getattr(sys.modules[mod], 'modeChanged', None):
-				continue
-
-			sys.modules[mod].modeChanged(self,
-				user,
-				channel,
-				set,
-				modes,
-				args)
+		for chan in self.channels:
+			self.join(chan)
 
 	def topicUpdated(self, user, channel, newtopic):
 		''' Called when a channel topic is updated. '''
@@ -333,11 +278,63 @@ class Bot(irc.IRCClient):
 				channel,
 				newtopic)
 
-	def periodic(self):
-		''' This is called every 5 minutes. '''
+	def userJoined(self, user, channel):
+		''' Called when a user joins a channel. '''
+		self.chatters[channel]['users'].update({ 
+			user: {}})
+		self.whois(user)
+
 		for mod in core.MODULES:
-			if getattr(sys.modules[mod], 'periodic', None):
-				sys.modules[mod].periodic(self)
+			if getattr(sys.modules[mod], 'userJoined', None):
+				sys.modules[mod].userJoined(self, user, channel)
+
+	def userKicked(self, kickee, channel, kicker, message):
+		''' Called when a user KICKs another user. '''
+		log('observed %s kick %s from %s for %s' % (
+			kicker, kickee, channel, message))
+
+		self.chatters[channel]['users'].pop(kickee)
+
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'userKicked', None):
+				sys.modules[mod].userKicked(self,
+					kickee,
+					channel,
+					kicker,
+					message)
+
+	def userLeft(self, user, channel):
+		''' Called when a user PARTs a channel. '''
+		try:
+			self.chatters[channel]['users'].pop(user)
+		except KeyError, e:
+			err('mystery user %s left %s' % (user, channel))
+		
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'userLeft', None):
+				sys.modules[mod].userLeft(self, user, channel)
+
+	def userQuit(self, user, message):
+		''' Called when a user QUITs IRC. '''
+		for channel in self.chatters:
+			if user in self.chatters[channel]:
+				self.chatters[channel]['users'].pop(user)
+
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'userQuit', None):
+				sys.modules[mod].userQuit(self, user, channel)
+
+	def userRenamed(self, oldname, newname):
+		''' Called when a user changes his/her nick. '''
+		for chan in self.chatters:
+			oldchatter = self.chatters[chan]['users'].pop(oldname)
+			self.chatters[chan]['users'].update(oldchatter)
+
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'userRenamed', None):
+				sys.modules[mod].userRenamed(self,
+					oldname,
+					newname)
 
 	#
 	# IRC Protocol Handler Callbacks.
