@@ -9,7 +9,6 @@ from twisted.words.protocols import irc
 
 import config
 from botlogger import *
-from core import MODULES
 
 # bot modules - callbacks should be registered at import so the import order
 # here is also the execution order.
@@ -70,7 +69,7 @@ class Bot(irc.IRCClient):
 		if channel not in self._names:
 			return
 		
-		for mod in MODULES:
+		for mod in core.MODULES:
 			if not getattr(sys.modules[mod], 'namesReply', None):
 				continue
 
@@ -101,7 +100,7 @@ class Bot(irc.IRCClient):
 		if user not in self._whois:
 			return
 		
-		for mod in MODULES:
+		for mod in core.MODULES:
 			if not getattr(sys.modules[mod], 'whoisReply', None):
 				continue
 
@@ -156,12 +155,12 @@ class Bot(irc.IRCClient):
 
 	def joined(self, channel):
 		log('Joined channel %s' % channel)
-		for mod in MODULES:
+		for mod in core.MODULES:
 			if getattr(sys.modules[mod], 'joined', None):
 				sys.modules[mod].joined(self, channel)
 
 	def userJoined(self, user, channel):
-		for mod in MODULES:
+		for mod in core.MODULES:
 			if getattr(sys.modules[mod], 'userJoined', None):
 				sys.modules[mod].userJoined(self, user, channel)
 
@@ -169,9 +168,10 @@ class Bot(irc.IRCClient):
 		nick = user.split('!', 1)[0]
 
 		try:
-			for mod in MODULES:
+			for mod in core.MODULES:
 				if getattr(sys.modules[mod], 'privmsg', None):
-					sys.modules[mod].privmsg(self, user, channel, msg)
+					sys.modules[mod].privmsg(self,
+						user, channel, msg)
 		except core.StopCallBacks:
 			pass
 
@@ -191,7 +191,8 @@ class Bot(irc.IRCClient):
 
 			module = matches.group(1)
 			if module not in sys.modules:
-				self.msg(nick, 'Module %s is not loaded.' % module)
+				self.msg(nick, 'Module %s is not loaded.' % (
+					module))
 				return
 
 			log('Reloading module %s at request of %s' % (
@@ -199,20 +200,17 @@ class Bot(irc.IRCClient):
 				nick
 			))
 
-			if module in MODULES:
-				del(MODULES[module])
-
 			reload(sys.modules[module])
 
 	def action(self, user, channel, msg):
 		nick = user.split('!', 1)[0]
-		for mod in MODULES:
+		for mod in core.MODULES:
 			if getattr(sys.modules[mod], 'action', None):
 				sys.modules[mod].action(self, user, channel, msg)
 
 	def modeChanged(self, user, channel, set, modes, args):
 		nick = user.split('!', 1)[0]
-		for mod in MODULES:
+		for mod in core.MODULES:
 			if not getattr(sys.modules[mod], 'modeChanged', None):
 				continue
 
