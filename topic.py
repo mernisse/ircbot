@@ -4,8 +4,8 @@
 Take a custom BSD-style calendar(1) file and set a topic on all joined 
 channels from the notable events of the day.
 
-This tries to be polite, if the topic is set by someone other than the bot
-or if the topic doesn't look like an event it won't change the topic.
+This tries to be polite, if the topic doesn't look like an event it won't 
+change the topic.
 
 '''
 import core
@@ -59,7 +59,7 @@ def emit_event(month, day):
 	if not mmdd in EVENTS:
 		return '%s\%s Nothing ever happens.' % (month, day)
 
-	return "%s\%s %s" % (
+	return "%s/%s %s" % (
 		month,
 		day,
 		EVENTS[mmdd][random.randint(0, len(EVENTS[mmdd]) -1)]
@@ -72,9 +72,6 @@ def topicUpdated(self, user, channel, topic):
 	Be polite.
 
 	'''
-	if not user == self.nickname and topic:
-		return
-
 	thismonth = time.strftime('%m')
 	thisday = time.strftime('%d')
 
@@ -85,7 +82,7 @@ def topicUpdated(self, user, channel, topic):
 		self.topic(channel, emit_event(thismonth, thisday))
 		return
 
-	matches = re.search(r'^(\d+)/(\d+)\s+(.*)', topic, re.I)
+	matches = re.search(r'^(\d+)[/\\](\d+)\s+(.*)', topic, re.I)
 	if not matches:
 		return
 
@@ -99,7 +96,7 @@ def topicUpdated(self, user, channel, topic):
 
 def periodic(self):
 	''' get all the topics for all the channels we are joined to. '''
-	for channel in self.chatters:	
+	for channel in self.chatters:
 		self.topic(channel)
 
 load_calendar()
