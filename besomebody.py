@@ -33,8 +33,13 @@ def quote_from_disk(who, index=None):
 		fd = open("nick/%s.txt" % (who))
 		for line in fd:
 			line = line.strip()
+			
+			if not line:
+				continue
+
 			sayings.append(line)
-	except:
+	except Exception, e:
+		err('besomebody - failed to load quotes %s' % str(e))
 		return "I do not know of whom you speak."
 
 	if matches.groups()[1]:
@@ -52,12 +57,12 @@ def load_archer_quotes():
 		request.add_header('User-Agent', 'ircbot/1.0 (python)')
 		page = urllib2.urlopen(request)
 	except Exception, e:
-		log('archer.load_quotes() failed: %s' % str(e))
+		err('archer.load_quotes() failed: %s' % str(e))
 		return
 
 	parsed = BeautifulSoup(page)
 	if not parsed:
-		log('archer.load_quotes() failed to parse html')
+		err('archer.load_quotes() failed to parse html')
 		return
 
 	quotes = parsed.findAll('dl')
