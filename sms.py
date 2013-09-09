@@ -47,7 +47,7 @@ def privmsg(self, user, channel, msg):
 	message = matches.group(3)
 
 	# save header so we can programatically determine length later.
-	header = "<marvin on behalf of %s> " % speaker
+	header = "<%s on behalf of %s> " % (self.nickname, speaker)
 	message = header + message
 
 	if len(message) > 160:
