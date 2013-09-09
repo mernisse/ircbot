@@ -41,7 +41,7 @@ def reload_masks():
 		MASKS = new_masks
 		MASKS_TSTAMP = masks_tstamp
 	except Exception, e:
-		log("Failed to reload config: %s" % str(e))
+		err("Failed to reload config: %s" % str(e))
 
 def check_masks(userhost):
 	global MASKS
@@ -53,13 +53,19 @@ def check_masks(userhost):
 	return False
 
 def whoisReply(self, nick, userinfo):
-	userhost = "%s@%s" % (userinfo['username'], userinfo['hostname'])
-	if not check_masks(userhost):
+	if nick == self.nickname:
 		return
 
-	for channel in self.channels:
+	userhost = "%s!%s@%s" % (nick,
+		userinfo['username'],
+		userinfo['hostname'])
+
+	if not check_masks(userhost):
+		err('nick %s unauthorized' % nick)
+		return
+
+	for channel in self.chatters:
 		if nick in self.chatters[channel]['users']:
-			log('OP %s in %s' % (nick, channel))
 			self.mode(channel, True, "o", user=nick)
 
 core.register_module(__name__)

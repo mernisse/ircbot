@@ -307,6 +307,10 @@ class Bot(irc.IRCClient):
 	def modeChanged(self, user, channel, set, modes, args):
 		''' Called on a server/user/channel mode change '''
 		nick = user.split('!', 1)[0]
+
+		if channel.startswith("#"):
+			self.names(channel)
+
 		for mod in core.MODULES:
 			if not getattr(sys.modules[mod], 'modeChanged', None):
 				continue
@@ -334,6 +338,7 @@ class Bot(irc.IRCClient):
 		for mod in core.MODULES:
 			if getattr(sys.modules[mod], 'periodic', None):
 				sys.modules[mod].periodic(self)
+
 	#
 	# IRC Protocol Handler Callbacks.
 	#
@@ -409,7 +414,7 @@ class Bot(irc.IRCClient):
 		user = params[1].lower()
 
 		for channel in self.chatters:
-			if not user in self.chatters[channel]:
+			if not user in self.chatters[channel]['users']:
 				continue
 
 			info = self.chatters[channel]['users'][user]
