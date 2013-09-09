@@ -3,7 +3,7 @@
 import re
 import sys
 
-from twisted.internet import protocol, reactor
+from twisted.internet import protocol, reactor, task
 from twisted.internet.ssl import ClientContextFactory
 from twisted.words.protocols import irc
 
@@ -28,6 +28,7 @@ import bugs
 import remotecontrol
 import sms
 import uberurls
+import topic
 
 # this should happen last
 import hateball
@@ -37,6 +38,7 @@ class Bot(irc.IRCClient):
 	# Derived from: http://stackoverflow.com/questions/6671620/list-users-in-irc-channel-using-twisted-python-irc-framework
 	_names = {}
 	_whois = {}
+	task = None
 
 	def names(self, channel):
 		''' Get a userlist for the channel, on reply namesReply() will
@@ -155,6 +157,14 @@ class Bot(irc.IRCClient):
 
 	def joined(self, channel):
 		log('Joined channel %s' % channel)
+
+		#
+		# we want to fire a callback every 5 minutes, just in case we
+		# want that for various module functionality.
+		#
+		self.task = task.LoopingCall(self.periodic)
+		self.task.start(5 * 60)
+#, now=False)
 		for mod in core.MODULES:
 			if getattr(sys.modules[mod], 'joined', None):
 				sys.modules[mod].joined(self, channel)
@@ -220,7 +230,21 @@ class Bot(irc.IRCClient):
 				set,
 				modes,
 				args)
-		
+
+	def topicUpdated(self, user, channel, newtopic):
+		for mod in core.MODULES:
+			if not getattr(sys.modules[mod], 'topicUpdated', None):
+				continue
+
+			sys.modules[mod].topicUpdated(self,
+				user,
+				channel,
+				newtopic)
+
+	def periodic(self):
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'periodic', None):
+				sys.modules[mod].periodic(self)
 
 class BotFactory(protocol.ClientFactory):
 	protocol = Bot
@@ -241,4 +265,5 @@ if __name__ == '__main__':
 		reactor.connectTCP(config.host, config.port,
 			BotFactory(config.nickname, config.channels, 
 			config.password))
+
 	reactor.run()
