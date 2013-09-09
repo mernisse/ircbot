@@ -5,6 +5,7 @@ import sys
 
 from twisted.internet import protocol, reactor, task
 from twisted.internet.ssl import ClientContextFactory
+from twisted.python.rebuild import rebuild
 from twisted.words.protocols import irc
 
 import config
@@ -13,7 +14,10 @@ from botlogger import *
 # bot modules - callbacks should be registered at import so the import order
 # here is also the execution order.
 
-# core should always be first.
+# import myself so I can call rebuild on myself.
+import bot
+
+# core should always be early.
 import core
 
 # this should happen before everything else.
@@ -212,7 +216,9 @@ class Bot(irc.IRCClient):
 				nick
 			))
 
-			reload(sys.modules[module])
+			# I am told twisted's rebuild is better than the
+			# built in reload().
+			rebuild(sys.modules[module])
 			self.msg(nick, 'Module %s reloaded.' % (module))
 
 	def action(self, user, channel, msg):

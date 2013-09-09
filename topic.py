@@ -1,8 +1,8 @@
 #!/usr/bin/python -tt
 ''' topic.py (c) 2013 Matthew J Ernisse <mernisse@ub3rgeek.net>
 
-Take a custom calendar(1) file from a remote server and set a topic
-on the channel from the notable events of the day.
+Take a custom BSD-style calendar(1) file and set a topic on all joined 
+channels from the notable events of the day.
 
 This tries to be polite, if the topic is set by someone other than the bot
 or if the topic doesn't look like an event it won't change the topic.
@@ -13,42 +13,18 @@ import random
 import re
 import time
 import os
-import paramiko
-import private
 
 from botlogger import *
 
 EVENTS = {}
 
 def load_calendar():
-	''' fetch the calendar from a remote server via sftp '''
+	''' load a bsd style calendar(1) file '''
 	global EVENTS
-
-	remote = { 
-		'username': private.SFTP_USERNAME,
-		'password': private.SFTP_PASSWORD,
-		'hostname': private.SFTP_HOSTNAME,
-		'location': private.SFTP_LOCATION,
-	}
-
-	try:
-
-		transport = paramiko.Transport((remote['hostname'], 22))
-		transport.connect(
-			username = remote['username'],
-			password = remote['password'])
-
-		sftp = paramiko.SFTPClient.from_transport(transport)
-		sftp.get(remote['location'], private.SFTP_LOCAL)
-		sftp.close()
-		transport.close()
-	except Exception, e:
-		err('topic - failed to get calendar: %s' % str(e))
-		return
 
 	try:
 		count = 0
-		fd = open(private.SFTP_LOCAL)
+		fd = open('calendar')
 		for line in fd:
 			matches = re.search(r'^(\d+)/(\d+)\s+(.*)', line, re.I)
 			if not matches:

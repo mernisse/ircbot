@@ -3,7 +3,7 @@ autoop.conf
 config.py
 private.py
 remotecontrol.py
-calendar.iorek
+calendar
 ascii/
 btsutils/
 fates.json
