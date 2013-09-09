@@ -23,9 +23,8 @@ def archer():
 
 def bhanat():
 	''' /me pours a little out for his homies who are not here. '''
-	return "<postit>" + str(randint(1, 9)) + str(randint(1, 9)) + \
-	str(randint(1, 9)) + str(randint(1, 9)) + str(randint(1, 9)) + \
-	"</postit>"
+	ticketnum = random.randint(10000, 999999)
+	return "<postit>%s</postit>" % str(ticketnum)
 
 def quote_from_disk(who, index=None):
 	''' emit a quote from nicks/who.txt '''
