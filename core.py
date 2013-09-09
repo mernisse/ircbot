@@ -1,5 +1,5 @@
 #!/usr/bin/python -tt
-""" core.py - (c) 2009, 2013 Matthew John Ernisse <mernisse@ub3rgeek.net>
+''' core.py - (c) 2009, 2013 Matthew John Ernisse <mernisse@ub3rgeek.net>
 provide core functions for the bot
 
 The MODULES list holds all the names for the plugins registered to the
@@ -7,25 +7,14 @@ bot.  Each plugin should import core and call core.register_module(__name__)
 to ensure it is present in this list.  Failure to do so will cause the
 callbacks to never get processed.
 
-Functions:
-	joined(self, channel)
-	userJoined(self, user, channel)
-	privmsg(self, user, channel, msg)
-	action(self, user, channel, msg)
+This could be useful if you want to extend parts of the bot but not register
+callbacks.
 
-Variables:
-	self - the Bot class
-	user - the full userspec (nick!ident@host) of the origin user
-	channel - channel the event was 'seen' in, or the bot's  nick if
-		  directed.
-	msg - message text of the event (if any)
-
-"""
+'''
 import pickle
 from botlogger import *
 
 MODULES = []
-MODULES.append('core')
 
 class Brain(dict):
 	''' Implement a simple persistant key, value storage object.  This 
@@ -91,23 +80,17 @@ class StopCallBacks(Exception):
 	''' Exception to stop processing callbacks '''
 	pass
 
-
-def joined(self, channel):
-	pass
-
-def userJoined(self, user, channel):
-	pass
-
-def privmsg(self, user, channel, msg):
-	pass
-
-def action(self, user, channel, msg):
-	pass
-
 def register_module(module):
+	''' Register your module with the bot so that your callbacks will
+	be called when an event happens.
+
+	'''
 	global MODULES
 	if module not in MODULES:
 		MODULES.append(module)
 		log('%s Registered.' % module)
+	else:
+		log('%s Reloaded.' % module)
 
 brain = Brain()
+register_module(__name__)
