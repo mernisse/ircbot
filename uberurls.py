@@ -122,7 +122,7 @@ def processurl(speaker, url):
 		# shorten the url for some reason, so detect that and try to
 		# re-shorten that url.
 		#
-		if not shorurl.startswith('http://uber.hk'):
+		if not shorturl.startswith('http://uber.hk'):
 			shorturl = fetchshorturl(url)
 			try:
 				cursor.execute("UPDATE urls SET shorturl = %s",
