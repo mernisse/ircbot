@@ -19,7 +19,7 @@ ARCHER_QUOTES = []
 def archer():
 	''' ...call Kenny Loggins... 'cuz you're in the Danger Zone. '''
 	global ARCHER_QUOTES
-	return ARCHER_QUOTES[randint(0, len(ARCHER_QUOTES) -1)]
+	return ARCHER_QUOTES[random.randint(0, len(ARCHER_QUOTES) -1)]
 
 def bhanat():
 	''' /me pours a little out for his homies who are not here. '''
@@ -45,7 +45,7 @@ def quote_from_disk(who, index=None):
 	if matches.groups()[1]:
 		index = int(matches.group(2))
 	else:
-		index = randint(1, len(sayings) - 1)
+		index = random.randint(1, len(sayings) - 1)
 
 	return sayings[index]
 
