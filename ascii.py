@@ -1,6 +1,7 @@
 #!/usr/bin/python -tt
 
 import core
+import os
 import re
 
 from botlogger import *
@@ -19,6 +20,22 @@ def privmsg(self, user, channel, msg):
 		return 
 
 	what = matches.group(1).lower()
+
+	if what == 'list':
+		try:
+			available = []
+			files = os.listdir('ascii/')
+			for f in files:
+				if not f.endswith('.txt'):
+					continue
+				fn, ext = os.path.splitext(os.path.basename(f))
+				available.append(fn)
+		
+		except Exception, e:
+			err('ascii - problem listing options: %s' % str(e))
+			self.msg(dst, "It's a secret.")
+
+		self.msg(dst, ' '.join(available), only=True)
 
 	art = ascii(what)
 	if not art:
