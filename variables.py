@@ -20,7 +20,7 @@ def privmsg(self, user, channel, msg):
 		dst = channel
 
 	matches = re.search(
-		r'^(set|get|del)\s+([a-z0-9_-]+)(\s+(\S+)\s*)?$',
+		r'^(set|get|del)\s+([a-z0-9_-]+)(\s+(.+))?$',
 		msg, re.I)
 
 	if not matches:
