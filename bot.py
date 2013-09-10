@@ -55,9 +55,8 @@ import topic
 import hateball
 
 class Bot(irc.IRCClient):
-	_names = {}
-	_whois = {}
 	chatters = {}
+	owners = config.owners
 	task = None
 
 	def _forMe(self, msg):
@@ -183,9 +182,13 @@ class Bot(irc.IRCClient):
 				sys.modules[mod].periodic(self)
 
 	def privmsg(self, user, channel, msg):
-		''' Called when the bot receives a MSG '''
-		nick = user.split('!', 1)[0]
+		''' Called when the bot sees a message in a channel or receives
+		a query.
 
+		Bot control actions should go into the privmsg callback in 
+		core.py.
+
+		'''
 		try:
 			for mod in core.MODULES:
 				if getattr(sys.modules[mod], 'privmsg', None):
@@ -195,62 +198,7 @@ class Bot(irc.IRCClient):
 		except core.StopCallBacks:
 			pass
 
-		if channel != self.nickname:
-			msg = self._forMe(msg)
-			if not msg:
-				return
 
-		#
-		# bot control actions are only honored from owners.
-		#
-		if not nick in config.owners:
-			err('%s tried to command me!' % nick)
-			self.msg(nick, 'You are not an owner.')
-			return
-
-		matches = re.search(r'^\s*reload\s+([a-z0-9_]+)\s*$', msg)
-		if matches:
-			module = matches.group(1)
-			if module not in sys.modules:
-				self.msg(nick, 'Module %s is not loaded.' % (
-					module))
-				return
-
-			log('Reloading module %s at request of %s' % (
-				module,
-				nick
-			))
-
-			# I am told twisted's rebuild is better than the
-			# built in reload().
-			rebuild(sys.modules[module])
-			self.msg(nick, 'Module %s reloaded.' % (module))
-			return
-
-		matches = re.search(r'^\s*join\s+(#[a-z0-9_]+)\s*$', msg)
-		if matches:
-			channel = matches.group(1)
-			if channel in self.chatters:
-				self.msg(nick, 'Already in %s' % channel)
-				return
-
-			self.join(channel)
-			self.msg(nick, 'Joined %s' % channel)
-			return
-
-		matches = re.search(r'^\s*leave\s+(#[a-z0-9_]+)\s*$', msg)
-		if matches:
-			channel = matches.group(1)
-			if channel not in self.chatters:
-				self.msg(nick, 'Not in %s' % channel)
-				return
-			self.leave(channel, '%s has banished me.' % nick)
-			self.msg(nick, 'Left %s' % channel)
-
-		matches = re.search(r'^\s*spy\s*$', msg)
-		if matches:
-			self.msg(nick, 'Chatters:\n%s' % str(self.chatters))
-			return
 
 	def signedOn(self):
 		''' Called upon successful connection to the server '''
