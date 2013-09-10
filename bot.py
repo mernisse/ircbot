@@ -41,6 +41,7 @@ import nethack
 
 import variables
 import autoop
+import idler
 
 import ascii
 import besomebody
@@ -104,7 +105,13 @@ class Bot(irc.IRCClient):
 		work.
 
 		'''
-		
+
+		if not message:
+			if only:
+				raise core.StopCallBacks
+
+			return
+	
 		# I don't get why super(Bot, self).msg() doesn't work here...
 		irc.IRCClient.msg(self, user, message, length)
 		if only:
