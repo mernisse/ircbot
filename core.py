@@ -83,12 +83,11 @@ class StopCallBacks(Exception):
 
 def privmsg(self, user, channel, msg):
 		''' Bot control actions, both public and private. '''
-		nick = user.split('!', 1)[0]
-		dest = nick
+		dest = user.split('!', 1)[0]
 
 		if channel != self.nickname:
-			message = self._forMe(msg)
-			if not message:
+			msg = self._forMe(msg)
+			if not msg:
 				return
 
 			dest = channel
