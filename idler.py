@@ -139,6 +139,12 @@ def leaderboard(channel, top=5):
 
 	idlers = []
 	for nick in IDLERS[channel]:
+		classy = core.brain.getfor(nick, 'IDLER_CLASS')
+		pretty_name = nick
+		if classy:
+			pretty_name = '%s the %s' % (
+				nick, classy)
+			
 		idlers.append([
 			IDLERS[channel][nick]['level'],
 			nick,
@@ -149,7 +155,7 @@ def leaderboard(channel, top=5):
 	if len(leaders) > top:
 		leaders = idlers[:top]
 
-	for l, n in leaders:
+	for l, n in idlers:
 		leaders.append("%s (level %s)" % (n, l))
 
 	return '\n'.join(leaders)
@@ -184,16 +190,6 @@ def updatePlayer(nick, channel, spoken=None):
 			'progress': player['progress'],
 		}
 		db_set(IDLERS[channel][nick]) # wtf.
-
-		classy = core.brain.getfor(nick, 'IDLER_CLASS')
-		if not classy:
-			return 'Logged in %s (level %i).' % (
-				nick, IDLERS[channel][nick]['level'])
-		
-		return 'Logged in %s, the level %i %s.' % (
-			nick,
-			IDLERS[channel][nick]['level'],
-			classy)
 
 	player = IDLERS[channel][nick]
 	player['progress'] += now - player['last_spoken']
@@ -247,7 +243,7 @@ def periodic(self):
 			MESSAGES[channel] = []
 
 		for nick in self.chatters[channel[1:]]:
-			self.msg(channel, updatePlayer(nick, channel))
+			updatePlayer(nick, channel)
 
 def privmsg(self, user, channel, msg):
 	global ACTIVE_CHANNELS
@@ -259,7 +255,7 @@ def privmsg(self, user, channel, msg):
 			if channel not in ACTIVE_CHANNELS:
 				return
 
-			self.msg(channel, updatePlayer(nick, channel, True))
+			updatePlayer(nick, channel, True)
 			return
 
 		dest = channel
@@ -269,8 +265,8 @@ def privmsg(self, user, channel, msg):
 			if channel not in ACTIVE_CHANNELS:
 				return
 		
-			self.msg(dest, updatePlayer(nick, channel, True))
-			self.msg(dest, leaders(), only=True)
+			updatePlayer(nick, channel, True)
+			self.msg(dest, leaderboard(channel), only=True)
 
 def userJoined(self, nick, channel):
 	# JOIN counts as speaking.
@@ -278,7 +274,7 @@ def userJoined(self, nick, channel):
 	if channel not in ACTIVE_CHANNELS:
 		return
 
-	self.msg(channel, updatePlayer(nick, channel, True))
+	updatePlayer(nick, channel, True)
 
 def userKicked(self, nick, channel, kicker, message):
 	global ACTIVE_CHANNELS, IDLERS
