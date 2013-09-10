@@ -14,6 +14,7 @@ callbacks.
 import pickle
 import re
 from botlogger import *
+from twisted.python.rebuild import rebuild
 
 MODULES = []
 

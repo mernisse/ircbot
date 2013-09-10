@@ -25,7 +25,6 @@ import time
 from botlogger import *
 from twisted.internet import protocol, reactor, task
 from twisted.internet.ssl import ClientContextFactory
-from twisted.python.rebuild import rebuild
 from twisted.words.protocols import irc
 
 # bot modules - callbacks should be registered at import so the import order
