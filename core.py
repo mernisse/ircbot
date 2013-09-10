@@ -85,10 +85,12 @@ def privmsg(self, user, channel, msg):
 		''' Bot control actions, both public and private. '''
 		nick = user.split('!', 1)[0]
 		dest = nick
+
 		if channel != self.nickname:
 			message = self._forMe(msg)
 			if not message:
 				return
+
 			dest = channel
 
 		#
@@ -96,9 +98,9 @@ def privmsg(self, user, channel, msg):
 		#
 		matches = re.search(r'^\s*help', msg, re.I)
 		if matches:
-		#	self.msg(dest, 'Visit http://mernisse.github.io/ircbot')
-			self.msg(dest, 'you are poopy.')
-			return
+			self.msg(dest,
+				'Visit http://mernisse.github.io/ircbot',
+				only=True)
 
 		#
 		# bot control actions are only honored from owners and are
@@ -106,17 +108,15 @@ def privmsg(self, user, channel, msg):
 		# originally uttered in public.
 		#
 		if not nick in self.owners:
-			err('%s tried to command me!' % nick)
-			self.msg(nick, 'You are not an owner.')
 			return
 
 		matches = re.search(r'^\s*reload\s+([a-z0-9_]+)\s*$', msg)
 		if matches:
 			module = matches.group(1)
 			if module not in sys.modules:
-				self.msg(nick, 'Module %s is not loaded.' % (
-					module))
-				return
+				self.msg(nick,
+					'Module %s is not loaded.' % module,
+					only=True)
 
 			log('Reloading module %s at request of %s' % (
 				module,
@@ -126,34 +126,33 @@ def privmsg(self, user, channel, msg):
 			# I am told twisted's rebuild is better than the
 			# built in reload().
 			rebuild(sys.modules[module])
-			self.msg(nick, 'Module %s reloaded.' % (module))
-			return
+			self.msg(nick,
+				'Module %s reloaded.' % module, only=True)
 
 		matches = re.search(r'^\s*join\s+(#[a-z0-9_]+)\s*$', msg)
 		if matches:
 			channel = matches.group(1)
 			if channel in self.chatters:
-				self.msg(nick, 'Already in %s' % channel)
-				return
+				self.msg(nick,
+					'Already in %s' % channel, only=True)
 
 			self.join(channel)
-			self.msg(nick, 'Joined %s' % channel)
-			return
+			self.msg(nick,
+				'Joined %s' % channel, only=True)
 
 		matches = re.search(r'^\s*leave\s+(#[a-z0-9_]+)\s*$', msg)
 		if matches:
 			channel = matches.group(1)
 			if channel not in self.chatters:
-				self.msg(nick, 'Not in %s' % channel)
-				return
+				self.msg(nick, 'Not in %s' % channel, only=True)
+
 			self.leave(channel, '%s has banished me.' % nick)
-			self.msg(nick, 'Left %s' % channel)
+			self.msg(nick, 'Left %s' % channel, only=True)
 
 		matches = re.search(r'^\s*spy\s*$', msg)
 		if matches:
-			self.msg(nick, 'Chatters:\n%s' % str(self.chatters))
-			return
-
+			self.msg(nick, 
+				'Chatters:\n%s' % str(self.chatters), only=True)
 
 def register_module(module):
 	''' Register your module with the bot so that your callbacks will
