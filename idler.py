@@ -231,7 +231,7 @@ def updatePlayer(nick, channel, spoken=None):
 def periodic(self):
 	global ACTIVE_CHANNELS, MESSAGES
 	for channel in ACTIVE_CHANNELS:
-		if not channel[1:] in self.chatters:
+		if not channel in self.chatters:
 			# first call this can sometimes race
 			# joining, so ignore.
 			continue
@@ -242,7 +242,7 @@ def periodic(self):
 
 			MESSAGES[channel] = []
 
-		for nick in self.chatters[channel[1:]]:
+		for nick in self.chatters[channel]:
 			updatePlayer(nick, channel)
 
 def privmsg(self, user, channel, msg):
@@ -336,13 +336,13 @@ def whoisReply(self, nick, info):
 
 	'''
 	for channel in ACTIVE_CHANNELS:
-		if channel[1:] not in self.chatters:
+		if channel not in self.chatters:
 			# this should not happen, except maybe
 			# for a join/part race or something.
 			# worst case periodic() will get it...
 			continue
 
-		for nick in self.chatters[channel[1:]]:
+		for nick in self.chatters[channel]:
 			updatePlayer(nick, channel)
 
 core.register_module(__name__)
