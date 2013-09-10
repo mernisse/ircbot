@@ -42,9 +42,7 @@ def quote_from_disk(who, index=None):
 		err('besomebody - failed to load quotes %s' % str(e))
 		return "I do not know of whom you speak."
 
-	if matches.groups()[1]:
-		index = int(matches.group(2))
-	else:
+	if not index:
 		index = random.randint(1, len(sayings) - 1)
 
 	return sayings[index]
