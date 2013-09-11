@@ -2,8 +2,13 @@
 ''' idler.py (c) 2013 Matthew J Ernisse <mernisse@ub3rgeek.net>
 
 Implement an idle tracker - this is NOT IdleRPG like in that it
-does not penalize users for talking, it just keeps track of idle
-time.
+does not ''penalize users'' for talking, it just keeps track of
+idle time.
+
+TODO:
+	- Maybe add combat?  Would need to figure out a scaling
+	attack power system or something.
+
 
 '''
 
@@ -16,10 +21,10 @@ import MySQLdb
 from botlogger import *
 
 ACTIVE_CHANNELS = ['#adultflirt'] # list of channels to care about.
-IDLERS = {}  # players
+IDLERS = {}   # players
 MESSAGES = {} # waiting messages
-TIMER = 3600 # base timer for each level
-SCALER = 1.4 # exponent to scale the next level by
+TIMER = 14400 # base timer for each level
+SCALER = 1.4  # exponent to scale the next level by
 
 SQL_HOST = private.IDLERS_SQL_HOST
 SQL_USER = private.IDLERS_SQL_USER
@@ -56,10 +61,10 @@ def db_get(nick, channel):
 		}
 		return player
 
-	# id | nick | channel | level | login | last_spoken | next_level | progress
+	# id | nick | channel | level | login | checked | next_level | progress
 	player = {}
 	player['level'] = int(row[3])
-	player['next_level'] = float(row[6])
+	player['next_level'] = int(row[6])
 	player['progress'] = float(row[7])
 
 	return player
@@ -79,14 +84,14 @@ def db_set(player):
 		if row:
 			cursor.execute('''UPDATE players SET
 				nick = %s, level = %s, login = %s, 
-				last_spoken = %s, next_level = %s, 
+				checked = %s, next_level = %s, 
 				progress = %s
 				WHERE nick = %s
 				AND channel = %s''', (
 					player['nick'],
 					player['level'],
 					player['login'],
-					player['last_spoken'],
+					player['checked'],
 					player['next_level'],
 					player['progress'], 
 					player['nick'],
@@ -98,14 +103,14 @@ def db_set(player):
 			return
 
 		cursor.execute('''INSERT INTO players 
-			(nick, channel, level, login, last_spoken, next_level, progress)
+			(nick, channel, level, login, checked, next_level, progress)
 			VALUES
 			(%s, %s, %s, %s, %s, %s, %s)''', (
 				player['nick'],
 				player['channel'],
 				player['level'],
 				player['login'],
-				player['last_spoken'],
+				player['checked'],
 				player['next_level'],
 				player['progress'],)
 		)
@@ -163,7 +168,7 @@ def leaderboard(channel, top=5):
 def updatePlayer(nick, channel, spoken=None):
 	''' update a player, can be called periodically
 	or it can be called when a user speaks to reset their
-	last_spoken
+	checked
 
 	sets MESSAGES dict with anything it wants sent to the
 	channel whenever (level notifications, etc).  Will return
@@ -189,30 +194,29 @@ def updatePlayer(nick, channel, spoken=None):
 			'channel': channel,
 			'level': player['level'],
 			'login': now,
-			'last_spoken': now,
+			'checked': now,
 			'next_level': player['next_level'],
 			'progress': player['progress'],
 		}
 		db_set(IDLERS[channel][nick])
 
 	player = IDLERS[channel][nick]
-	player['progress'] += now - player['last_spoken']
-	
+	player['progress'] += now - player['checked']
+	player['checked'] = now
+
 	if spoken:
-		player['last_spoken'] = now
+		# most IRC clients don't think of you as 'IDLE'
+		# until 5 minutes of no activity has passed.
+		if now - player['checked'] >= 300:
+			player['progress'] -= 300
 
-	if player['progress'] < player['next_level']:
-		IDLERS[channel][nick] = player
-		db_set(player)
-		return
-
-	while player['progress'] >= player['next_level']:
+	if player['progress'] >= player['next_level']:
 		# person has levelled up
 		player['level'] += 1
-		player['next_level'] = TIMER * \
-			(player['level'] ** SCALER)
-		player['progress'] = player['progress'] - \
-			player['next_level']
+		player['progress'] -= player['next_level']
+		player['next_level'] = int(TIMER * \
+			(player['level'] ** SCALER))
+
 
 	IDLERS[channel][nick] = player
 	db_set(player)
