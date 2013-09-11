@@ -15,9 +15,9 @@ import MySQLdb
 
 from botlogger import *
 
-ACTIVE_CHANNELS = ['#adultflirt', '#test'] # list of channels to care about.
+ACTIVE_CHANNELS = ['#adultflirt'] # list of channels to care about.
 IDLERS = {}  # players
-MESSAGES = {}
+MESSAGES = {} # waiting messages
 TIMER = 3600 # base timer for each level
 SCALER = 1.4 # exponent to scale the next level by
 
@@ -121,7 +121,6 @@ def db_set(player):
 
 	return
 
-
 def deferred_message(channel, msg):
 	''' add a message to the queue to send
 	when the bot gets around to it.
@@ -149,6 +148,7 @@ def leaderboard(channel, top=5):
 			IDLERS[channel][nick]['level'],
 			nick,
 		])
+
 	idlers.sort(reverse=True)
 
 	leaders = ["Top Idlers in %s:" % channel]
@@ -172,6 +172,10 @@ def updatePlayer(nick, channel, spoken=None):
 
 	'''
 	global IDLERS, TIMER, SCALER
+	if nick == 'marvin':
+		# XXX: FIXME - get this programatically somehow.
+		# no fair letting the bot play
+		return
 
 	now = time.time()
 	if not channel in IDLERS:
@@ -189,7 +193,7 @@ def updatePlayer(nick, channel, spoken=None):
 			'next_level': player['next_level'],
 			'progress': player['progress'],
 		}
-		db_set(IDLERS[channel][nick]) # wtf.
+		db_set(IDLERS[channel][nick])
 
 	player = IDLERS[channel][nick]
 	player['progress'] += now - player['last_spoken']
@@ -231,7 +235,7 @@ def updatePlayer(nick, channel, spoken=None):
 def periodic(self):
 	global ACTIVE_CHANNELS, MESSAGES
 	for channel in ACTIVE_CHANNELS:
-		if not channel in self.chatters:
+		if channel not in self.chatters:
 			# first call this can sometimes race
 			# joining, so ignore.
 			continue
@@ -242,7 +246,7 @@ def periodic(self):
 
 			MESSAGES[channel] = []
 
-		for nick in self.chatters[channel]:
+		for nick in self.chatters[channel]['users']:
 			updatePlayer(nick, channel)
 
 def privmsg(self, user, channel, msg):
@@ -250,26 +254,38 @@ def privmsg(self, user, channel, msg):
 	nick = user.split('!', 1)[0]
 	dest = nick
 	if channel != self.nickname:
+		if channel in ACTIVE_CHANNELS:
+			updatePlayer(nick, channel, True)
+
 		msg = self._forMe(msg)
 		if not msg:
-			if channel not in ACTIVE_CHANNELS:
-				return
-
-			updatePlayer(nick, channel, True)
 			return
 
 		dest = channel
 
 		matches = re.search(r'^\s*idlers', msg, re.I)
 		if matches:
-			if channel not in ACTIVE_CHANNELS:
-				return
-		
-			updatePlayer(nick, channel, True)
 			self.msg(dest, leaderboard(channel), only=True)
 
+
+		#
+		# priv. commands
+		#
+		if nick not in self.owners:
+			return
+
+		matches = re.search(r'^\s*idlesave', msg, re.I)
+		if matches:
+			for chan in ACTIVE_CHANNELS:
+				self.msg(nick, 'saving users for %s' % chan)
+				
+				for player in IDLERS[chan]:
+					self.msg(nick, player)
+					updatePlayer(player, chan)
+			
+			raise core.StopCallBacks
+
 def userJoined(self, nick, channel):
-	# JOIN counts as speaking.
 	global ACTIVE_CHANNELS
 	if channel not in ACTIVE_CHANNELS:
 		return
@@ -283,20 +299,19 @@ def userKicked(self, nick, channel, kicker, message):
 
 	updatePlayer(nick, channel, True)
 	try:
-		IDLERS[channel][nick].pop()
+		IDLERS[channel].pop(nick)
 	except KeyError:
 		err('idler - KeyError on remove %s from %s ' % (
 			nick, channel))
 
 def userLeft(self, nick, channel):
-	# PART counts as speaking.
 	global ACTIVE_CHANNELS, IDLERS
 	if channel not in ACTIVE_CHANNELS:
 		return
 
 	updatePlayer(nick, channel, True)
 	try:
-		IDLERS[channel][nick].pop()
+		IDLERS[channel].pop(nick)
 	except KeyError:
 		err('idler - KeyError on remove %s from %s ' % (
 			nick, channel))
@@ -304,12 +319,12 @@ def userLeft(self, nick, channel):
 def userQuit(self, nick, message):
 	global ACTIVE_CHANNELS, IDLERS
 	for channel in IDLERS:
-		if not nick in IDLERS[channel]:
+		if nick not in IDLERS[channel]:
 			continue
 
 		updatePlayer(nick, channel, True)
 		try:
-			IDLERS[channel][nick].pop()
+			IDLERS[channel].pop(nick)
 		except KeyError:
 			err('idler - KeyError on remove %s from %s ' % (
 				nick, channel))
@@ -322,7 +337,7 @@ def userRenamed(self, oldname, newname):
 
 		try:
 			IDLERS[channel][newname] = \
-				IDLERS[channel][oldname].pop()
+				IDLERS[channel].pop(oldname)
 			updatePlayer(newname, channel)
 		except KeyError:
 			err('idler - KeyError on renaming %s to %s in %s ' % (
@@ -342,7 +357,7 @@ def whoisReply(self, nick, info):
 			# worst case periodic() will get it...
 			continue
 
-		for nick in self.chatters[channel]:
+		for nick in self.chatters[channel]['users']:
 			updatePlayer(nick, channel)
 
 core.register_module(__name__)
