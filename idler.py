@@ -9,7 +9,6 @@ TODO:
 	- Maybe add combat?  Would need to figure out a scaling
 	attack power system or something.
 
-
 '''
 
 import core
@@ -23,8 +22,8 @@ from botlogger import *
 ACTIVE_CHANNELS = ['#adultflirt'] # list of channels to care about.
 IDLERS = {}   # players
 MESSAGES = {} # waiting messages
-TIMER = 14400 # base timer for each level
 SCALER = 1.4  # exponent to scale the next level by
+TIMER = 14400 # base timer for each level
 
 SQL_HOST = private.IDLERS_SQL_HOST
 SQL_USER = private.IDLERS_SQL_USER
@@ -41,7 +40,7 @@ def db_get(nick, channel):
 			WHERE nick = %s
 			AND channel = %s''',
 			(nick, channel,))
-		row = cursor.fetchone()		
+		row = cursor.fetchone()
 		sql.close()
 
 	except Exception, e:
@@ -52,20 +51,26 @@ def db_get(nick, channel):
 		raise
 
 	if not row:
+		now = time.time()
 		player = {
 			'nick': nick,
 			'channel': channel,
 			'level': 1,
+			'checked': now,
 			'next_level': TIMER,
 			'progress': 0.0,
+			'last_spoken': now,
 		}
 		return player
 
-	# id | nick | channel | level | login | checked | next_level | progress
+	# id | nick | channel | level | login | checked | next_level | 
+	# progress | last_spoken
 	player = {}
 	player['level'] = int(row[3])
+	player['checked'] = float(row[5])
 	player['next_level'] = int(row[6])
 	player['progress'] = float(row[7])
+	player['last_spoken'] = float(row[8])
 
 	return player
 
@@ -85,7 +90,7 @@ def db_set(player):
 			cursor.execute('''UPDATE players SET
 				nick = %s, level = %s, login = %s, 
 				checked = %s, next_level = %s, 
-				progress = %s
+				progress = %s, last_spoken = %s
 				WHERE nick = %s
 				AND channel = %s''', (
 					player['nick'],
@@ -94,6 +99,7 @@ def db_set(player):
 					player['checked'],
 					player['next_level'],
 					player['progress'], 
+					player['last_spoken'], 
 					player['nick'],
 					player['channel'],
 				)
@@ -103,16 +109,17 @@ def db_set(player):
 			return
 
 		cursor.execute('''INSERT INTO players 
-			(nick, channel, level, login, checked, next_level, progress)
+			(nick, channel, level, login, checked, next_level, progress, last_spoken)
 			VALUES
-			(%s, %s, %s, %s, %s, %s, %s)''', (
+			(%s, %s, %s, %s, %s, %s, %s, %s)''', (
 				player['nick'],
 				player['channel'],
 				player['level'],
 				player['login'],
 				player['checked'],
 				player['next_level'],
-				player['progress'],)
+				player['progress'],
+				player['last_spoken'],)
 		)
 		sql.commit()
 		sql.close()
@@ -177,8 +184,7 @@ def updatePlayer(nick, channel, spoken=None):
 
 	'''
 	global IDLERS, TIMER, SCALER
-	if nick == 'marvin':
-		# XXX: FIXME - get this programatically somehow.
+	if nick == core.nickname:
 		# no fair letting the bot play
 		return
 
@@ -197,6 +203,7 @@ def updatePlayer(nick, channel, spoken=None):
 			'checked': now,
 			'next_level': player['next_level'],
 			'progress': player['progress'],
+			'last_spoken': player['last_spoken'],
 		}
 		db_set(IDLERS[channel][nick])
 
@@ -207,19 +214,26 @@ def updatePlayer(nick, channel, spoken=None):
 	if spoken:
 		# most IRC clients don't think of you as 'IDLE'
 		# until 5 minutes of no activity has passed.
-		if now - player['checked'] >= 300:
+		if now - player['last_spoken'] >= 300:
 			player['progress'] -= 300
 
+		player['last_spoken'] = now
+
+	levelled = False
 	if player['progress'] >= player['next_level']:
 		# person has levelled up
 		player['level'] += 1
 		player['progress'] -= player['next_level']
 		player['next_level'] = int(TIMER * \
 			(player['level'] ** SCALER))
+		levelled = True
 
 
 	IDLERS[channel][nick] = player
 	db_set(player)
+
+	if not levelled:
+		return
 
 	classy = core.brain.getfor(nick, 'IDLER_CLASS')
 	if not classy:
@@ -354,6 +368,7 @@ def whoisReply(self, nick, info):
 	self.chatters is populated.
 
 	'''
+	global ACTIVE_CHANNELS
 	for channel in ACTIVE_CHANNELS:
 		if channel not in self.chatters:
 			# this should not happen, except maybe
