@@ -3,6 +3,9 @@
 
 Impersonate a variety of folks.
 
+TODO:
+	preload quotes from disk into memory and watch for changes.
+
 '''
 
 import core
@@ -20,6 +23,19 @@ def archer():
 	''' ...call Kenny Loggins... 'cuz you're in the Danger Zone. '''
 	global ARCHER_QUOTES
 	return ARCHER_QUOTES[random.randint(0, len(ARCHER_QUOTES) -1)]
+
+def afraid():
+	'''I am not the Kwisatz Haderach...'''
+	litany = ['I must not fear.',
+		'Fear is the mind-killer.',
+		'Fear is the little-death that brings total obliteration.',
+		'I will face my fear.',
+		'I will permit it to pass over me and through me.',
+		'And when it has gone past I will turn the inner eye to see its path.',
+		'Where the fear has gone there will be nothing.',
+		'Only I will remain.',
+	]
+	return '\n'.join(litany)
 
 def bhanat():
 	''' /me pours a little out for his homies who are not here. '''
@@ -97,6 +113,9 @@ def privmsg(self, user, channel, msg):
 
 	elif who == "archer":
 		self.msg(dst, archer(), only=True)
+
+	elif who == "afraid":
+		self.msg(dst, afraid(), only=True)
 
 	else:
 		index = matches.group(2)
