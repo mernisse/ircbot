@@ -16,6 +16,7 @@ import re
 from botlogger import *
 from twisted.python.rebuild import rebuild
 
+nickname = ''
 MODULES = []
 
 class Brain(dict):
@@ -84,6 +85,7 @@ class StopCallBacks(Exception):
 
 def privmsg(self, user, channel, msg):
 		''' Bot control actions, both public and private. '''
+		global MODULES
 		nick = user.split('!', 1)[0]
 		dest = nick
 
@@ -130,6 +132,16 @@ def privmsg(self, user, channel, msg):
 			self.msg(nick,
 				'Module %s reloaded.' % module, only=True)
 
+		matches = re.search(r'^\s*debug\s*$', msg, re.I)
+		if matches:
+			if self.debug:
+				self.debug = False
+			else:
+				self.debug = True
+
+			self.msg(nick,
+				'Debug is now %s' % str(self.debug), only=True)
+
 		matches = re.search(r'^\s*join\s+(#[a-z0-9_]+)\s*$', msg)
 		if matches:
 			channel = matches.group(1)
@@ -154,6 +166,12 @@ def privmsg(self, user, channel, msg):
 		if matches:
 			self.msg(nick, 
 				'Chatters:\n%s' % str(self.chatters), only=True)
+
+		matches = re.search(r'^\s*listmods\s*', msg, re.I)
+		if matches:
+			self.msg(nick,
+				'Loaded Modules: %s.' % ','.join(MODULES),
+				only=True)
 
 def register_module(module):
 	''' Register your module with the bot so that your callbacks will
