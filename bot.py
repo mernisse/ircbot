@@ -56,6 +56,7 @@ import hateball
 
 class Bot(irc.IRCClient):
 	chatters = {}
+	debug = None
 	owners = config.owners
 	task = None
 
@@ -105,13 +106,12 @@ class Bot(irc.IRCClient):
 		work.
 
 		'''
-
 		if not message:
 			if only:
 				raise core.StopCallBacks
 
 			return
-	
+		
 		# I don't get why super(Bot, self).msg() doesn't work here...
 		irc.IRCClient.msg(self, user, message, length)
 		if only:
@@ -217,6 +217,12 @@ class Bot(irc.IRCClient):
 		if not self.task:
 			self.task = task.LoopingCall(self.periodic)
 			self.task.start(5 * 60)
+
+		#
+		# Make it so we can get the bot's nick without
+		# having to have the bot's object.
+		#
+		core.nickname = self.nickname
 
 		for chan in self.channels:
 			self.join(chan)
@@ -381,9 +387,9 @@ class Bot(irc.IRCClient):
 	def irc_unknown(self, prefix, command, params):
 		''' Called on any unhandled server replies '''
 		# Uncomment to log any unhandled replies from the server.
-		# log('UNKN: prefix=%s, command=%s, params=%s' % (
-		#	prefix, command, params))
-		pass
+		if self.debug:
+			log('UNKN: prefix=%s, command=%s, params=%s' % (
+				prefix, command, params))
 
 class BotFactory(protocol.ClientFactory):
 	protocol = Bot
