@@ -460,7 +460,7 @@ def whoisReply(self, nick, info):
 			# this should not happen, except maybe
 			# for a join/part race or something.
 			# worst case periodic() will get it...
-			continue{{}}
+			continue
 
 		for nick in self.chatters[channel]['users']:
 			updatePlayer(nick, channel)
