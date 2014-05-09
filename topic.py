@@ -9,6 +9,7 @@ change the topic.
 
 '''
 import core
+import feedparser
 import random
 import re
 import time
@@ -17,6 +18,22 @@ import os
 from botlogger import *
 
 EVENTS = {}
+
+def load_alternate_rss(url):
+	''' Load an alternate source from an RSS feed '''
+
+	try:
+		parsed = feedparser.parse(url)
+		topic = parsed['entries'][0].get('title', None)
+		if not topic:
+			return
+
+		return topic
+
+	except Exception, e:
+		err('topic - failed to parse rss data from %s: %s' % (
+			url, str(e)))
+		return
 
 def load_calendar():
 	''' load a bsd style calendar(1) file '''
@@ -57,7 +74,14 @@ def emit_event(month, day):
 	mmdd = "%s-%s" % (month, day)
 
 	if not mmdd in EVENTS:
-		return '%s/%s Nothing ever happens.' % (month, day)
+		url = "http://www.history.com/this-day-in-history/rss"
+		event = load_alternate_rss(url)
+		if not event:
+			return '%s/%s Nothing ever happens.' % (
+				month, day
+			)
+
+		return '%s/%s %s' % (month, day, event) 
 
 	return "%s/%s %s" % (
 		month,
@@ -74,12 +98,13 @@ def topicUpdated(self, user, channel, topic):
 	'''
 	thismonth = time.strftime('%m')
 	thisday = time.strftime('%d')
+	event = emit_event(thismonth, thisday)
 
 	if not topic:
 		# if the topic is unset, that's a signal we can take it over.
 		# this is what happens if the channel is new / never had a topic
 	 	# (the user will be set to the server name).
-		self.topic(channel, emit_event(thismonth, thisday))
+		self.topic(channel, event)
 		return
 
 	matches = re.search(r'^(\d+)[/\\](\d+)\s+(.*)', topic, re.I)
@@ -92,7 +117,7 @@ def topicUpdated(self, user, channel, topic):
 	if thismonth == topicmonth and thisday == topicday:
 		return
 
-	self.topic(channel, emit_event(thismonth, thisday))
+	self.topic(channel, event)
 
 def periodic(self):
 	''' get all the topics for all the channels we are joined to. '''
