@@ -41,12 +41,13 @@ import nethack
 
 import variables
 import autoop
-import idler
+#import idler
 
 import ascii
 import besomebody
 import bugs
 import remotecontrol
+import stock
 import sms
 import uberurls
 import topic
