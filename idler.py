@@ -68,12 +68,24 @@ def battle(channel, force=None):
 	)
 
 	if a_roll == 0:
+		# Critical Miss!
 		msg += "Unfortunatly %s tripped and fell."
 		msg += " This calamity cost them 30%% of their slack!"
 		deferred_message(channel, msg % (attacker))
 
 		progress = IDLERS[channel][attacker]['progress']
 		IDLERS[channel][attacker]['progress'] = progress * 0.70
+		db_set(IDLERS[channel][attacker])
+		return
+
+	if a_roll == a_max:
+		# Critical Hit!
+		msg += " %s becomes imbued with the power of their God!"
+		msg += " This blessing grants them 20%% slack!"
+		deferred_message(channel, msg % (attacker))
+
+		progress = IDLERS[channel][attacker]['progress']
+		IDLERS[channel][attacker]['progress'] = progress * 1.20
 		db_set(IDLERS[channel][attacker])
 		return
 		
@@ -211,6 +223,44 @@ def deferred_message(channel, msg):
 
 	MESSAGES[channel].append(msg)
 
+def event(channel):
+	''' Have a calamity or blessing happen to a player. '''
+	global IDLERS
+
+	if random.randint(0, 1000) < 994:
+		return
+
+	blessings = [
+		'%s spent the year dead for tax reasons!',
+		'%s drank a Pan Galactic Gargle Blaster.',
+		'%s was picked up by the wake of the passing Heart of Gold.',
+	]
+
+	calamities = [
+		'%s was turned into a pot of petunias.',
+		'%s was waylayed by a rogue telephone cleaner.',
+		'%s has been insulted by Wowbagger the Infinitely Prolonged.',
+	]
+
+	possible_nicks = IDLERS[channel].keys()
+	victim = possible_nicks[random.randint(0, len(possible_nicks) - 1)]
+
+	# 70/30% chance of a blessing vs calamity
+	if random.randint(0, 100) <= 70:
+		msg = blessings[random.randint(0, len(blessings) - 1)]
+		msg += "  This blessing has granted them 20%% slack!"
+		slack = 1.2
+	else:
+		msg = calamities[random.randint(0, len(calamities) - 1)]
+		msg += "  This terrible calamity has cost them 20%% slack!"
+		slack = 0.8
+
+	deferred_message(channel, msg % (victim))
+	progress = IDLERS[channel][victim]['progress']
+	IDLERS[channel][victim]['progress'] = progress * slack
+	db_set(IDLERS[channel][victim])
+	return
+	
 def leaderboard(channel, top=5):
 	''' return a leaderboard '''
 	global IDLERS
@@ -327,6 +377,7 @@ def periodic(self):
 
 		# Ready?  FIGHT!
 		battle(channel)
+		event(channel)
 
 		if channel in MESSAGES:
 			for msg in MESSAGES[channel]:
