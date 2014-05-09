@@ -289,7 +289,7 @@ class Bot(irc.IRCClient):
 		''' Called when a user changes his/her nick. '''
 		for chan in self.chatters:
 			oldchatter = self.chatters[chan]['users'].pop(oldname)
-			self.chatters[chan]['users'].update(oldchatter)
+			self.chatters[chan]['users'][newname] = oldchatter
 
 		for mod in core.MODULES:
 			if getattr(sys.modules[mod], 'userRenamed', None):

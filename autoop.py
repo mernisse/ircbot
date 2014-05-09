@@ -53,6 +53,10 @@ def check_masks(userhost):
 	return False
 
 def whoisReply(self, nick, userinfo):
+	if not 'username' in userinfo or \
+		not 'hostname' in userinfo:
+		return
+
 	if nick == self.nickname:
 		return
 

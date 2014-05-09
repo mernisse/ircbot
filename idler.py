@@ -14,12 +14,14 @@ TODO:
 import core
 import time
 import private
+import random
 import re
 import MySQLdb
 
 from botlogger import *
 
 ACTIVE_CHANNELS = ['#adultflirt'] # list of channels to care about.
+AP_SCALE = 25 # level * AP_SCALE = max attackpower
 IDLERS = {}   # players
 MESSAGES = {} # waiting messages
 SCALER = 1.4  # exponent to scale the next level by
@@ -30,6 +32,71 @@ SQL_USER = private.IDLERS_SQL_USER
 SQL_PASS = private.IDLERS_SQL_PASS
 SQL_DB = private.IDLERS_SQL_DB
 
+def battle(channel, force=None):
+	''' execute a battle '''
+	global AP_SCALE, IDLERS, MESSAGES
+
+	if not force:
+		if random.randint(0,100) < 97:
+			return
+
+	possible_nicks = IDLERS[channel].keys()
+	attacker = possible_nicks[random.randint(0, len(possible_nicks) - 1)]
+
+	for x in range(0, 10):
+		victim = \
+			possible_nicks[random.randint(0, len(possible_nicks) - 1)]
+
+		if attacker != victim:
+			break
+
+	else:
+		return
+
+	a_max = int(IDLERS[channel][attacker]['level']) * AP_SCALE
+	v_max = int(IDLERS[channel][victim]['level']) * AP_SCALE
+
+	a_roll = random.randint(0, a_max)
+	v_roll = random.randint(0, v_max)
+
+	log('%s (%i/%i) attacked %s (%i/%i)' % (
+		attacker, a_roll, a_max, victim, v_roll, v_max
+	))
+
+	msg = "%s (%i/%i) came upon %s (%i/%i) and attacked them!" % (
+		attacker, a_roll, a_max, victim, v_roll, v_max
+	)
+
+	if a_roll == 0:
+		msg += "Unfortunatly %s tripped and fell."
+		msg += " This calamity cost them 30%% of their slack!"
+		deferred_message(channel, msg % (attacker))
+
+		progress = IDLERS[channel][attacker]['progress']
+		IDLERS[channel][attacker]['progress'] = progress * 0.70
+		db_set(IDLERS[channel][attacker])
+		return
+		
+	if a_roll <= v_roll:
+		if victim.lower() == 'lee':
+			msg += " %s dodges behind a pack of dogs!"
+		elif victim.lower() == 't':
+			msg += " %s defends themself lazily!"
+		else:
+			msg += " %s defended themself valiantly!"
+
+		deferred_message(channel, msg % (victim))
+		return
+
+	if a_roll >= v_roll:
+		msg += " %s is victorious and is rewarded with 10%% more slack!"
+		deferred_message(channel, msg % (attacker))
+
+		progress = IDLERS[channel][attacker]['progress']
+		IDLERS[channel][attacker]['progress'] = progress * 1.10
+		db_set(IDLERS[channel][attacker])
+		return
+	
 def db_get(nick, channel):
 	''' get a player from the DB '''
 	global SQL_HOST, SQL_USER, SQL_PASS, SQL_DB
@@ -258,6 +325,9 @@ def periodic(self):
 			# joining, so ignore.
 			continue
 
+		# Ready?  FIGHT!
+		battle(channel)
+
 		if channel in MESSAGES:
 			for msg in MESSAGES[channel]:
 				self.msg(channel, msg)
@@ -281,27 +351,43 @@ def privmsg(self, user, channel, msg):
 
 		dest = channel
 
-		matches = re.search(r'^\s*idlers', msg, re.I)
-		if matches:
-			self.msg(dest, leaderboard(channel), only=True)
+	#
+	# public commands
+	#
+	matches = re.search(r'^\s*idlers', msg, re.I)
+	if matches:
+		self.msg(dest, leaderboard(channel), only=True)
 
+	#
+	# priv. commands
+	#
+	if nick not in self.owners:
+		return
 
-		#
-		# priv. commands
-		#
-		if nick not in self.owners:
-			return
+	matches = re.search(r'^\s*playerdump', msg, re.I)
+	if matches:
+		self.msg(nick, 'Players:\n%s' % str(IDLERS), only=True)
 
-		matches = re.search(r'^\s*idlesave', msg, re.I)
-		if matches:
-			for chan in ACTIVE_CHANNELS:
-				self.msg(nick, 'saving users for %s' % chan)
-				
-				for player in IDLERS[chan]:
-					self.msg(nick, player)
-					updatePlayer(player, chan)
+	matches = re.search(r'^\s*playerbattle\s+(#[a-z0-9_]+)\s*', msg, re.I)
+	if matches:
+		c = matches.group(1)
+		if not c in ACTIVE_CHANNELS:
+			self.msg(nick, '%s is an invalid channel name.' % (c),
+				only=True)
+
+		battle(c, True)
+		self.msg(nick, 'A wild idler appears in %s!' % c, only=True)
+
+	matches = re.search(r'^\s*idlesave', msg, re.I)
+	if matches:
+		for chan in ACTIVE_CHANNELS:
+			self.msg(nick, 'saving users for %s' % chan)
 			
-			raise core.StopCallBacks
+			for player in IDLERS[chan]:
+				self.msg(nick, player)
+				updatePlayer(player, chan)
+		
+		raise core.StopCallBacks
 
 def userJoined(self, nick, channel):
 	global ACTIVE_CHANNELS

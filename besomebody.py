@@ -46,20 +46,17 @@ def quote_from_disk(who, index=None):
 	''' emit a quote from nicks/who.txt '''
 	sayings = []
 	try:
-		fd = open("nick/%s.txt" % (who))
-		for line in fd:
-			line = line.strip()
-			
-			if not line:
-				continue
+		with open("nick/%s.txt" % (who)) as fd:
+			line = fd.readline()
+			if line:
+				sayings.append(line)
 
-			sayings.append(line)
 	except Exception, e:
 		err('besomebody - failed to load quotes %s' % str(e))
 		return "I do not know of whom you speak."
 
 	if not index:
-		index = random.randint(1, len(sayings) - 1)
+		index = random.randint(0, len(sayings) - 1)
 
 	return sayings[index]
 
