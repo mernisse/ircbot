@@ -1,4 +1,5 @@
 #!/usr/bin/python -tt
+# coding: utf-8 
 """uberurls.py - (c) 2013 Matthew John Ernisse <mernisse@ub3rgeek.net>
 
 Catch, log, and shorten urls.  Uses uber.hk because that is mine.
@@ -33,24 +34,50 @@ def processurl(speaker, url):
 	page).
 
 	''' 
-	log('processing url %s from %s' % (speaker, url))
+	log('uberurls - processing url %s from %s' % (speaker, url))
 	try:
+		parsed = urlparse.urlparse(url)
+		query = urlparse.parse_qs(parsed.query)
+
 		request = urllib2.Request(url)
-		request.add_header('User-Agent', 'uberurls ircbot/python')
+		request.add_header('User-Agent', 'uberurls/1.0 (python)')
 		fp = urllib2.urlopen(request)
 
 	except urllib2.URLError, e:
 		err("uberurls - could not urlopen %s, %s" % (url, e.reason))
-		return "%s is dead %s" % (url, e.reason)
+		return "%s is dead %s (╯°□°）╯︵ ┻━┻ " % (url, e.reason)
 
 	#
 	# Clean up urls here
 	#
 
+	# dereference shortened urls.
+	if re.search(r't\.co|goo\.gl|bit\.ly|is\.gd|tinyurl\.com', url):
+		try:
+			canonical_url = fp.geturl()
+
+			log('uberurls - canonicalized shorturl %s to %s' % (
+				url, canonical_url))
+
+			url = canonical_url
+
+		except Exception, e:
+			err('uberurls - could not canonicalize %s: %s' % (
+				url, str(e)))
+	#
+	# XXX:TODO
+	# I want to locally cache certain URLs here, basically image urls
+	# hosted on the various CDNs should be downloaded and stored locally
+	# then re-written so as not to pile links onto shitty social media.
+	#
+	# current candidates:
+	# fbcdn.net
+	# googleusercontent.com
+	# pic.twitter.com
+	#
+
 	# sanitize youtube links.
 	if re.search(r'youtube\.com|youtu\.be', url):
-		parsed = urlparse.urlparse(url)
-		query = urlparse.parse_qs(parsed.query)
 		canonical_qs = ''
 		canonical_url = ''
 		if 't' in query:
@@ -71,7 +98,11 @@ def processurl(speaker, url):
 			canonical_url = url
 			canonical_url = re.sub('^http', 'https', url)
 
+		log('uberurls - canonicalized youtube url %s to %s' % (
+			url, canonical_url))
+
 		url = canonical_url
+
 
 	try:
 		sql = MySQLdb.connect(SQL_HOST, SQL_USER, SQL_PASS, SQL_DB)
@@ -122,7 +153,7 @@ def processurl(speaker, url):
 		# shorten the url for some reason, so detect that and try to
 		# re-shorten that url.
 		#
-		if not shorturl.startswith('http://uber.hk'):
+		if not parsed.netloc.startswith('uber.hk'):
 			shorturl = fetchshorturl(url)
 			try:
 				cursor.execute("UPDATE urls SET shorturl = %s",
@@ -131,7 +162,8 @@ def processurl(speaker, url):
 				sql.close()
 
 			except Exception, e:
-				err('uberurls - could not reshorten URL: %s' % str(e))
+				err('uberurls - could not reshorten URL: %s' % (
+					str(e)))
 				return
 	#
 	# handle embedded encoding in the content-type field
@@ -163,6 +195,8 @@ def fetchshorturl(url):
 	'''
 	parsed = urlparse.urlparse(url)
 	if parsed.netloc.startswith('uber.hk'):
+		log('uberurls - refusing to reshorten %s shorturl %s' % (
+			parsed.netloc, url))
 		return url
 
 	try:
@@ -183,7 +217,7 @@ def privmsg(self, user, channel, msg):
 	# look for a url in the incoming text
 	#
 	try:
-		matches = re.findall(r'(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)', msg)
+		matches = re.findall('((?:https?://|www\.|ftp\.)[-\w\d+&@#/\\%=~_|$?!:;,.]*[-\w\d+&@#/\\%=~_|$])', msg, re.I)
 		if not matches:
 			return None
 
