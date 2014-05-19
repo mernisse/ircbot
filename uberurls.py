@@ -45,7 +45,7 @@ def processurl(speaker, url):
 
 	except urllib2.URLError, e:
 		err("uberurls - could not urlopen %s, %s" % (url, e.reason))
-		return "%s is dead %s (╯°□°）╯︵ ┻━┻ " % (url, e.reason)
+		return "%s is dead %s ╯(°□°)╯ ︵┻━┻ " % (url, e.reason)
 
 	#
 	# Clean up urls here
