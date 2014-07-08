@@ -96,7 +96,7 @@ def processurl(speaker, url):
 
 		else:
 			canonical_url = url
-			canonical_url = re.sub('^http', 'https', url)
+			canonical_url = re.sub('^http:', 'https:', url)
 
 		log('uberurls - canonicalized youtube url %s to %s' % (
 			url, canonical_url))
