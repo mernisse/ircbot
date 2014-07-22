@@ -39,6 +39,9 @@ def processurl(speaker, url):
 		parsed = urlparse.urlparse(url)
 		query = urlparse.parse_qs(parsed.query)
 
+		if parsed.netloc == "uber.hk":
+			return updateshortened(url)
+
 		request = urllib2.Request(url)
 		request.add_header('User-Agent', 'uberurls/1.0 (python)')
 		fp = urllib2.urlopen(request)
@@ -209,6 +212,43 @@ def fetchshorturl(url):
 			url, str(e)
 		))
 		return url
+
+def updateshortened(url):
+	''' Update an already shortened URL'''
+	try:
+		sql = MySQLdb.connect(SQL_HOST, SQL_USER, SQL_PASS, SQL_DB)
+		cursor = sql.cursor()
+		cursor.execute("SELECT * FROM urls WHERE shorturl = %s", (url))
+		row = cursor.fetchone()
+
+	except Exception, e:
+		err('uberurls - SELECT error: %s' % str(e))
+		return
+
+	if not row:
+		#
+		# XXX: TODO - I should probably add to the DB if the url
+		# came from elsewhere, but later.
+		return
+
+	shorturl = row[2]
+	original = row[3]
+	count = int(row[4]) + 1 
+	log('got %s by %s (%ix)' % (shorturl, original, count)) 
+
+	try:
+		cursor.execute("UPDATE urls SET count = %s WHERE url = %s",
+			(count, url)
+		)
+		sql.commit()
+
+	except Exception, e:
+		err('uberurls - UPDATE error: %s' % str(e))
+		return
+
+	return "%s [%s mentioned %ix]" % (
+		shorturl, original, count
+	)
 
 def privmsg(self, user, channel, msg):
 	speaker = user.split('!', 1)[0]
