@@ -45,9 +45,10 @@ import autoop
 
 import ascii
 import besomebody
-import bugs
-import remotecontrol
+#import bugs
+#import remotecontrol
 import stock
+import weather
 import sms
 import uberurls
 import topic
@@ -114,6 +115,15 @@ class Bot(irc.IRCClient):
 			return
 		
 		# I don't get why super(Bot, self).msg() doesn't work here...
+		try:
+			message = str(message)
+		except Exception, e:
+			log('msg() failed to turn %s into string.  %e' % (
+				message,
+				str(e)
+			))
+			message = "Unable to convert supplied message to str."
+
 		irc.IRCClient.msg(self, user, message, length)
 		if only:
 			raise core.StopCallBacks
@@ -340,7 +350,7 @@ class Bot(irc.IRCClient):
 
 	def irc_RPL_WHOISIDLE(self, prefix, params):
 		''' Called for the IDLE portion of the WHOIS reply '''
-		user = params[1].lower()
+		user = params[1]
 
 		for channel in self.chatters:
 			if not user in self.chatters[channel]['users']:
@@ -354,7 +364,7 @@ class Bot(irc.IRCClient):
 
 	def irc_RPL_WHOISUSER(self, prefix, params):
 		''' Called for the USER portion of the WHOIS reply '''
-		user = params[1].lower()
+		user = params[1]
 
 		for channel in self.chatters:
 			if not user in self.chatters[channel]['users']:
@@ -369,7 +379,7 @@ class Bot(irc.IRCClient):
 
 	def irc_RPL_ENDOFWHOIS(self, prefix, params):
 		''' Called when a WHOIS reply is finished '''
-		user = params[1].lower()
+		user = params[1]
 
 		for channel in self.chatters:
 			if not user in self.chatters[channel]['users']:

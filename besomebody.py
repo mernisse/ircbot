@@ -78,7 +78,7 @@ def load_archer_quotes():
 
 	quotes = parsed.findAll('dl')
 	for quote in quotes:
-		ARCHER_QUOTES.append(quote.get_text())
+		ARCHER_QUOTES.append(quote.get_text().encode('ascii', 'ignore'))
 
 	log('archer loaded %i quotes' % len(ARCHER_QUOTES))
 

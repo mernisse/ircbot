@@ -55,7 +55,7 @@ def load_calendar():
 			if not mmdd in EVENTS:
 				EVENTS[mmdd] = [event]
 			else:
-				EVENTS[mmdd].append(event)
+				EVENTS[mmdd].append(str(event))
 
 		fd.close()
 

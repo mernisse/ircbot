@@ -24,6 +24,20 @@ def privmsg(self, user, channel, msg):
 		msg, re.I)
 
 	if not matches:
+		matches = re.search(r'^list', msg, re.I)
+		if not matches:
+			return
+
+		for k in core.brain[speaker].keys():
+			self.msg(dst, '%s = %s' % (
+				k,
+				core.brain.getfor(speaker, k)
+			))
+
+		self.msg(dst, '%i items stored for you.' % (
+			len(core.brain[speaker])
+		), only=True)
+
 		return
 
 	verb = matches.group(1).lower()
@@ -50,12 +64,13 @@ def privmsg(self, user, channel, msg):
 			core.brain[speaker] = { key: value }
 		else:
 			core.brain[speaker][key] = value
+			core.brain._save()
 
 		self.msg(dst, 'now %s = %s for you.' % (key, value), only=True)
 
 	elif verb == 'del':
 		if not speaker in core.brain or \
-			not key in core.brain['speaker']:
+			not key in core.brain[speaker]:
 			self.msg(dst, '%s was already unset.' % key, only=True)
 
 		core.brain[speaker].pop(key)

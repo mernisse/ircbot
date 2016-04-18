@@ -53,10 +53,13 @@ class Brain(dict):
 
 	def _save(self):
 		''' Save the object to disk '''
-
-		fd = open(self.fn, 'wb')
-		pickle.dump(self, fd)
-		fd.close()
+		try:
+			fd = open(self.fn, 'wb')
+			pickle.dump(self, fd)
+			fd.flush()
+			fd.close()
+		except IOError, e:
+			log('failed to write brain, ioerror: %s' % str(e))
 
 		log('wrote brain to disk')
 

@@ -5,6 +5,7 @@
 Base handler for urls.
 
 """
+import cookielib
 import cgi
 import re
 import sys
@@ -30,12 +31,21 @@ def processurl(speaker, url):
 	global URLLIB_RESPONSE
 
 	try:
+		# some websites do a redirect dance that requires cookies.
+		jar = cookielib.CookieJar()
+		opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(jar))
+		urllib2.install_opener(opener)
+
 		parsed = urlparse.urlparse(url)
 		query = urlparse.parse_qs(parsed.query)
 
 		request = urllib2.Request(url)
 		request.add_header('User-Agent', 'uberurls/1.0 (python)')
 		URLLIB_RESPONSE = urllib2.urlopen(request)
+
+		# Don't keep cookies beyond what is required to service
+		# the initial request.
+		jar.clear()
 
 	except urllib2.URLError, e:
 		return (url, "%s is dead %s ╯(°□°)╯ ︵┻━┻ " % (url, e.reason))

@@ -13,6 +13,7 @@ import syslog
 
 def log(s):
 	syslog.syslog(syslog.LOG_INFO, str(s))
+	print str(s)
 
 def err(s):
 	sys.stderr.write('%s\n' % s)
