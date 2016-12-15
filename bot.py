@@ -215,8 +215,6 @@ class Bot(irc.IRCClient):
 		except core.StopCallBacks:
 			pass
 
-
-
 	def signedOn(self):
 		''' Called upon successful connection to the server '''
 		log('Joining %s' % ",".join(self.channels))
