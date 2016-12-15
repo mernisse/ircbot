@@ -30,7 +30,7 @@ def privmsg(self, user, channel, msg):
 
 	try:
 		for url in urls:
-			url, title = handlers.processurl(speaker, url)
+			url, title = handlers.processurl(url)
 
 			#
 			# handle DB bullshit and shortening here.
@@ -41,7 +41,7 @@ def privmsg(self, user, channel, msg):
 				# New URL.
 				short = uber.shorten(url)
 				db.add_url_to_db(url, short, speaker)
-				self.msg( channel, "%s [%s]" % (short, title))
+				self.msg(channel, "%s [%s]" % (short, title))
 				continue
 
 			# Not new URL

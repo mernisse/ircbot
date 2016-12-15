@@ -1,6 +1,6 @@
 #!/usr/bin/python -tt
 # coding: utf-8 
-"""core.py (c) 2014 Matthew J Ernisse <mernisse@ub3rgeek.net>
+"""core.py (c) 2014-2016 Matthew J Ernisse <matt@going-flying.com>
 
 Base handler for urls.
 
@@ -13,22 +13,10 @@ import urllib
 import urllib2
 import urlparse
 
-from bs4 import BeautifulSoup
+from botlogger import *
 
-import youtube
-
-URLLIB_RESPONSE=None
-
-def processurl(speaker, url):
-	''' try to fetch a url from the interwebs.  store some info about
-	who mentioned it in the database (keeping track of mention counts)
-	along with some meta information from the url (content of the html
-	title tag if it is present or the mime-type if it is not a text/html
-	page).
-
-	''' 
-
-	global URLLIB_RESPONSE
+def processurl(url):
+	''' try to fetch a url from the interwebs. ''' 
 
 	try:
 		# some websites do a redirect dance that requires cookies.
@@ -40,36 +28,19 @@ def processurl(speaker, url):
 		query = urlparse.parse_qs(parsed.query)
 
 		request = urllib2.Request(url)
-		request.add_header('User-Agent', 'uberurls/1.0 (python)')
-		URLLIB_RESPONSE = urllib2.urlopen(request)
+		request.add_header('User-Agent', 'uberurls/2.0 (python)')
+		response = urllib2.urlopen(request)
 
 		# Don't keep cookies beyond what is required to service
 		# the initial request.
 		jar.clear()
 
 	except urllib2.URLError, e:
-		return (url, "%s is dead %s ╯(°□°)╯ ︵┻━┻ " % (url, e.reason))
+		err('core.processurl(): failed to load %s: %s' % (url, e.reason))
+		return "%s is dead %s ╯(°□°)╯ ︵┻━┻ " % (url, e.reason)
 
-	#
-	# Clean up urls here
-	#
-	url = sanitize_url(url)
-	url = youtube.sanitize_url(url)
-
-	#
-	# handle embedded encoding in the content-type field
-	#
-	mimetype = URLLIB_RESPONSE.info()['content-type']
-	if not mimetype.startswith('text/html'):
-		return (url, mimetype)
-
-	#
-	# fetch titles here
-	#
-	title = load_title()
-
-	return (url, title)
-
+	log('core.processurl(): loaded %s' % (url))
+	return response
 
 #
 # Helpers
@@ -111,18 +82,16 @@ def sanitize_url(url):
 	except Exception, e:
 		return url
 
-def load_title():
+def load_title(url, soup):
 	''' Return the title of the page. '''
 
-	global URLLIB_RESPONSE
-
 	try:
-		soup = BeautifulSoup(URLLIB_RESPONSE)
 		title = cgi.escape(soup.title.string)
 		title = title.encode('ascii', 'xmlcharrefreplace')
+		title = title.strip()
 
 	except Exception, e:
-		sys.stderr.write('core.load_title(): %s\n' % (str(e)))
-		return ''
+		err('core.load_title(): error: %s\n' % (str(e)))
+		return None
 
 	return title
