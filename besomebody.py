@@ -13,7 +13,7 @@ import random
 import re
 import urllib2
 
-from bs4 import BeautifulSoup
+import BeautifulSoup
 from botlogger import *
 from unidecode import unidecode
 
@@ -71,14 +71,18 @@ def load_archer_quotes():
 		err('archer.load_quotes() failed: %s' % str(e))
 		return
 
-	parsed = BeautifulSoup(page)
+	parsed = BeautifulSoup.BeautifulSoup(page)
 	if not parsed:
 		err('archer.load_quotes() failed to parse html')
 		return
 
 	quotes = parsed.findAll('dl')
+	if not quotes:
+		err('archer.load_quotes(): failed to find quotes in html')
+		return
+
 	for quote in quotes:
-		ARCHER_QUOTES.append(quote.get_text().encode('ascii', 'ignore'))
+		ARCHER_QUOTES.append(quote.text.encode('ascii', 'ignore'))
 
 	log('archer loaded %i quotes' % len(ARCHER_QUOTES))
 
