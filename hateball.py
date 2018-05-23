@@ -1,5 +1,4 @@
-#!/usr/bin/python -tt
-''' hateball.py (c) 2013 2018 Matthew J. Ernisse <matt@going-flying.com>
+''' hateball.py (c) 2013 - 2018 Matthew J. Ernisse <matt@going-flying.com>
 
 Module for irc bot that implements a magic hate ball-esque reply of last
 resort for directed speech to the bot.

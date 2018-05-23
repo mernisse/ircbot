@@ -25,26 +25,13 @@ OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-TODO:
-	preload quotes from disk into memory and watch for changes.
-
 '''
-
 import core
 import random
 import re
-import requests
 
-from bs4 import BeautifulSoup
 from botlogger import *
 
-ARCHER_QUOTES = []
-
-def archer():
-	''' ...call Kenny Loggins... 'cuz you're in the Danger Zone. '''
-	global ARCHER_QUOTES
-	return ARCHER_QUOTES[random.randint(0, len(ARCHER_QUOTES) -1)]
 
 def afraid():
 	'''I am not the Kwisatz Haderach...'''
@@ -82,34 +69,6 @@ def quote_from_disk(who, index=None):
 
 	return sayings[index]
 
-def load_archer_quotes():
-	global ARCHER_QUOTES
-	url = 'http://en.wikiquote.org/wiki/Archer_(TV_series)'
-	try:
-		response = requests.get(url, headers={
-			'User-Agent': 'ircbot/1.0 (python)'
-		})
-		response.raise_for_status()
-		page = response.text
-	except Exception as e:
-		err('archer.load_quotes() failed: %s' % str(e))
-		return
-
-	parsed = BeautifulSoup(page, "lxml")
-	if not parsed:
-		err('archer.load_quotes() failed to parse html')
-		return
-
-	quotes = parsed.findAll('dl')
-	if not quotes:
-		err('archer.load_quotes(): failed to find quotes in html')
-		return
-
-	for quote in quotes:
-		ARCHER_QUOTES.append(quote.text.encode('ascii', 'ignore'))
-
-	log('archer loaded %i quotes' % len(ARCHER_QUOTES))
-
 def privmsg(self, user, channel, msg):
 	dst = user.split('!', 1)[0]
 	if channel != self.nickname:
@@ -136,9 +95,6 @@ def privmsg(self, user, channel, msg):
 	if who == "bhanat":
 		self.msg(dst, bhanat(), only=True)
 
-	elif who == "archer":
-		self.msg(dst, archer(), only=True)
-
 	elif who == "afraid":
 		self.msg(dst, afraid(), only=True)
 
@@ -147,5 +103,4 @@ def privmsg(self, user, channel, msg):
 		self.msg(dst, quote_from_disk(who, index), only=True)
 	
 
-load_archer_quotes()
 core.register_module(__name__)

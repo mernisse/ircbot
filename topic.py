@@ -1,4 +1,3 @@
-#!/usr/bin/python -tt
 ''' topic.py (c) 2013 - 2018 Matthew J Ernisse <matt@going-flying.com>
 
 Take a custom BSD-style calendar(1) file and set a topic on all joined 
@@ -57,12 +56,28 @@ def load_alternate_rss(url):
 		logException(e)
 		return
 
-def load_calendar():
+def load_all_calendars():
+	""" Load all calendar files from a directory. """
+	global EVENTS
+
+	calPath = core.config.getChildren("topic").getStr("path")
+	if not os.path.exists(calPath):
+		return
+
+	for fn in os.listdir(calPath):
+		if not fn.startswith("calendar"):
+			continue
+
+		load_calendar(os.path.join(calPath, fn))
+
+	log('topic - loaded {} events.'.format(len(EVENTS)))
+
+def load_calendar(fn):
 	''' load a bsd style calendar(1) file '''
 	global EVENTS
 
 	try:
-		with open('calendar') as fd:
+		with open(fn) as fd:
 			for line in fd:
 				matches = re.search(r'^(\d+)/(\d+)\s+(.*)', line, re.I)
 				if not matches:
@@ -83,8 +98,6 @@ def load_calendar():
 		logException(e)
 		return
 
-	log('topic - loaded events.')
-	
 def emit_event(month, day):
 	''' return an event string, if nothing is in the calendar file for
 	today, emit a default string.
@@ -144,5 +157,5 @@ def periodic(self):
 	for channel in self.chatters:
 		self.topic(channel)
 
-load_calendar()
+load_all_calendars()
 core.register_module(__name__)

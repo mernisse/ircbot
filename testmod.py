@@ -1,4 +1,3 @@
-#!/usr/bin/python -tt
 """testmod.py - (c) 2009 Matthew John Ernisse <mernisse@ub3rgeek.net>
 
 Provide a demo for the plugin functionality.

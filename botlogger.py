@@ -1,11 +1,29 @@
-#!/usr/bin/python -tt
-""" botlogger.py - (c) 2009-2017 Matthew J. Ernisse <matt@going-flying.com>
-provide a generic log interface for the robot.
+""" botlogger.py - (c) 2009-2018 Matthew J. Ernisse <matt@going-flying.com>
+Provide a generic log interface for the robot wrapped around logging.
 
-This module provides log() and err() which in this iteration just calls out 
-to syslog() with a default loglevel of LOG_INFO, and LOG_ERR respectively 
-however any logging interface could be swapped in.
+Redistribution and use in source and binary forms,
+with or without modification, are permitted provided
+that the following conditions are met:
 
+    * Redistributions of source code must retain the
+      above copyright notice, this list of conditions
+      and the following disclaimer.
+    * Redistributions in binary form must reproduce
+      the above copyright notice, this list of conditions
+      and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import logging
 import logging.handlers
@@ -47,4 +65,4 @@ syslogHandler.setLevel(logging.INFO)
 
 logger.addHandler(consoleHandler)
 logger.addHandler(syslogHandler)
-logger.info("logging initalized...")
+logger.info("Logging initalized...")
