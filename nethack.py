@@ -1,5 +1,5 @@
 #!/usr/bin/python -tt
-''' nethack.py (c) 2009, 2013 Matthew J. Ernisse <mernisse@ub3rgeek.net>
+''' nethack.py (c) 2009, 2013 - 2018 Matthew J. Ernisse <matt@going-flying.com>
 
 Module for the IRC robot that implements similar function to the Nethack
 witty sayings.
@@ -32,19 +32,18 @@ def load_fortunes():
 		return True
 
 	try:
-		fd = open("nethack.nki")
 		new_fortunes = []
-		for line in fd:
-			line = re.sub("#.*", "", line.strip())
-			if not line:
-				continue
-			new_fortunes.append(line)
+		with open("nethack.nki") as fd:
+			for line in fd:
+				line = re.sub("#.*", "", line.strip())
+				if not line:
+					continue
+				new_fortunes.append(line)
 
-		fd.close()
 		FORTUNES = new_fortunes
 		FORTUNES_TSTAMP = tstamp
-	except Exception, e:
-		log("Could not load nethack.nki: %s" % str(e))
+	except Exception as e:
+		logException(e)
 		return None
 
 	return True
@@ -63,7 +62,6 @@ def privmsg(self, user, channel, msg):
 
 	# The "Phase of the moon" is 99% - 100% or 0% - 1%;
 	# let's play ball.
-
 	global NH_FIRED
 	if not dst in NH_FIRED.keys():
 		NH_FIRED[dst] = 0

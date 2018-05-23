@@ -20,7 +20,7 @@ import MySQLdb
 
 from botlogger import *
 
-ACTIVE_CHANNELS = ['#adultflirt'] # list of channels to care about.
+ACTIVE_CHANNELS = ['#netapp'] # list of channels to care about.
 AP_SCALE = 25 # level * AP_SCALE = max attackpower
 IDLERS = {}   # players
 MESSAGES = {} # waiting messages

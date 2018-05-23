@@ -1,18 +1,38 @@
-#!/usr/bin/python -tt
 # coding: utf-8 
-"""__init__.py - (c) 2013-2014 Matthew John Ernisse <mernisse@ub3rgeek.net>
+"""__init__.py - (c) 2013 - 2018 Matthew J. Ernisse <matt@going-flying.com>
 
 Catch, log, and shorten urls.  Uses uber.hk because that is mine.
 
+Redistribution and use in source and binary forms,
+with or without modification, are permitted provided
+that the following conditions are met:
+
+    * Redistributions of source code must retain the
+      above copyright notice, this list of conditions
+      and the following disclaimer.
+    * Redistributions in binary form must reproduce
+      the above copyright notice, this list of conditions
+      and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import core
 from botlogger import *
 
-import db
-import handlers
-import uber
+from . import handlers
 
-__all__ = ["db", "handlers", "uber"]
+__all__ = ["handlers"]
 
 def privmsg(self, user, channel, msg):
 	''' Module hook function for the ircbot.  Called on receipt of
@@ -30,36 +50,19 @@ def privmsg(self, user, channel, msg):
 
 	try:
 		for url in urls:
+			debug('uberurls - processing url: {}'.format(url))
 			url, title = handlers.processurl(url)
 
-			#
-			# handle DB bullshit and shortening here.
-			#
-			row = db.fetch_url_db(url)
+			debug('uberurls - {} mentioned url: {}, title: {})'.format(
+				speaker,
+				url,
+				title
+			))
+			self.msg(channel, "{} [{}]".format(url, title))
 
-			if not row:
-				# New URL.
-				short = uber.shorten(url)
-				db.add_url_to_db(url, short, speaker)
-				self.msg(channel, "%s [%s]" % (short, title))
-				continue
+	except Exception as e:
+		logException(e)
 
-			# Not new URL
-			short = row[2]
-			count = row[4]
-			db.update_url_in_db(short, count)
-			self.msg(channel, "%s [%s, mentioned %ix]" % (
-				short, title, int(count) + 1))
-			continue
-
-		raise core.StopCallBacks
-
-	except core.StopCallBacks:
-		raise
-
-	except Exception, e:
-		err('uberurls - Error: %s' % (str(e)))
-		self.msg(channel, "╯(°□°)╯ ︵┻━┻  %s" % (
-			str(e)), only=True)
+	raise core.StopCallBacks
 
 core.register_module(__name__)

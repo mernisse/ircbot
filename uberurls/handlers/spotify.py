@@ -1,7 +1,7 @@
 # coding: utf-8 
-"""youtube.py (c) 2014 - 2018 Matthew J Ernisse <matt@going-flying.com>
+"""spotify.py (c) 2017 - 2018 Matthew J Ernisse <matt@going-flying.com>
 
-Sanitize functions for Youtube URLs
+Sanitize functions for Spotify URLS
 
 Redistribution and use in source and binary forms,
 with or without modification, are permitted provided
@@ -30,38 +30,25 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import re
 import urllib.parse
 
-def sanitize_url(url):
-	''' cleanup youtube links, also strip the stupid link tracking BS
-	and always make use of HTTPS.
+from botlogger import *
 
-	'''
-
+def load_title(url, soup):
+	''' Load the Spotify item in a more obvious way.'''
 	parsed_url = urllib.parse.urlparse(url)
 	parsed_qs = urllib.parse.parse_qs(parsed_url.query)
 
-	if not re.search(r'youtube\.com|youtu\.be', parsed_url.netloc, re.I):
-		return url
+	if not re.search(r'open\.spotify\.com', parsed_url.netloc, re.I):
+		return None
 
-	canonical_qs = ''
-	canonical_url = 'https://youtube.com/watch?v='
-	if 't' in parsed_qs:
-		canonical_qs += '&t=' + parsed_qs['t'][0]
+	if not 'i' in parsed_qs:
+		log('spotifyitunes.load_title(): no item in url.')
+		return None
 
-	if 'list' in parsed_qs:
-		canonical_qs += '&list=' + parsed_qs['list'][0]
+	item = soup.find('tr', {'adam-id': parsed_qs['i']})
+	if not item:
+		err('spotify.load_title(): failed to find adam-id.')
+		return None
 
-	if 'v' in parsed_qs:
-		canonical_url += "%s%s" % (
-			parsed_qs['v'][0],
-			canonical_qs)
-
-	elif 'youtu.be' in parsed_url.netloc:
-		canonical_url = 's%s' % (
-			parsed_url.path[1:],
-			canonical_qs)
-
-	else:
-		canonical_url = url
-		canonical_url = re.sub('^http:', 'https:', url)
-
-	return canonical_url
+	return "Spotify: %s - %s" % (
+		item['preview-artist'], item['preview-title']
+	)

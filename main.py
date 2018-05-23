@@ -1,7 +1,9 @@
-# coding: utf-8 
-"""youtube.py (c) 2014 - 2018 Matthew J Ernisse <matt@going-flying.com>
+#!/usr/bin/env python3
+''' main.py (c) 2013 - 2018 Matthew Ernisse <matt@going-flying.com>
+All Rights Reserved
 
-Sanitize functions for Youtube URLs
+This is the main module of the IRC robot.  I envision him as Marvin, The
+Paranoid Android.
 
 Redistribution and use in source and binary forms,
 with or without modification, are permitted provided
@@ -26,42 +28,26 @@ OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-"""
-import re
-import urllib.parse
+'''
+import core
+import bot
+import sys
 
-def sanitize_url(url):
-	''' cleanup youtube links, also strip the stupid link tracking BS
-	and always make use of HTTPS.
+from botlogger import *
+from twisted.internet import reactor
+from twisted.internet.ssl import ClientContextFactory
 
-	'''
 
-	parsed_url = urllib.parse.urlparse(url)
-	parsed_qs = urllib.parse.parse_qs(parsed_url.query)
+if __name__ == '__main__':
+	hostname = core.config.getStr("host")
+	portnum = core.config.getInt("port")
 
-	if not re.search(r'youtube\.com|youtu\.be', parsed_url.netloc, re.I):
-		return url
-
-	canonical_qs = ''
-	canonical_url = 'https://youtube.com/watch?v='
-	if 't' in parsed_qs:
-		canonical_qs += '&t=' + parsed_qs['t'][0]
-
-	if 'list' in parsed_qs:
-		canonical_qs += '&list=' + parsed_qs['list'][0]
-
-	if 'v' in parsed_qs:
-		canonical_url += "%s%s" % (
-			parsed_qs['v'][0],
-			canonical_qs)
-
-	elif 'youtu.be' in parsed_url.netloc:
-		canonical_url = 's%s' % (
-			parsed_url.path[1:],
-			canonical_qs)
-
+	if core.config.getBool("ssl"):
+		log('Connecting to {}:{} with SSL'.format(hostname, portnum))
+		reactor.connectSSL(hostname, portnum,
+			bot.BotFactory(core.config), ClientContextFactory())
 	else:
-		canonical_url = url
-		canonical_url = re.sub('^http:', 'https:', url)
+		log('Connecting to {}:{}'.format(hostname, portnum))
+		reactor.connectTCP(hostname, portnum, bot.BotFactory(core.config))
 
-	return canonical_url
+	reactor.run()

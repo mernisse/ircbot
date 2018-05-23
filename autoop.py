@@ -1,52 +1,42 @@
-#!/usr/bin/python -tt
-''' autoop.py
+''' autoop.py (c) 2013 - 2018 Matthew J. Ernisse <matt@going-flying.com>
+All Rights Reserved.
 
 Automatically try to +o people who join the channel with a matching usermask
 
+Redistribution and use in source and binary forms,
+with or without modification, are permitted provided
+that the following conditions are met:
+
+    * Redistributions of source code must retain the
+      above copyright notice, this list of conditions
+      and the following disclaimer.
+    * Redistributions in binary form must reproduce
+      the above copyright notice, this list of conditions
+      and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
 
 import core
-import os
 import re
 import time
 
 from botlogger import *
-from stat import ST_MTIME
 
-CONFIG = 'autoop.conf'
-MASKS = []
-MASKS_TSTAMP = 0
-
-def reload_masks():
-	''' reload the configuration from disk '''
-
-	global CONFIG, MASKS, MASKS_TSTAMP
-	if not os.path.exists(CONFIG):
-		return
-
-	masks_tstamp = os.stat(CONFIG)[ST_MTIME]
-	if masks_tstamp < MASKS_TSTAMP:
-		return
-
-	try:
-		fd = open(CONFIG)
-		new_masks = []
-		for line in fd:
-			line = re.sub("#.*", "", line.strip())
-			if not line:
-				continue
-
-			new_masks.append(line)
-		fd.close()
-		MASKS = new_masks
-		MASKS_TSTAMP = masks_tstamp
-	except Exception, e:
-		err("Failed to reload config: %s" % str(e))
 
 def check_masks(userhost):
-	global MASKS
-	reload_masks()
-	for mask in MASKS:
+	for mask in core.config.getChildren("autoop").getList("masks"):
 		if re.search(mask, userhost):
 			return True
 

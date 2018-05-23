@@ -1,17 +1,36 @@
-#!/usr/bin/python -tt
 # coding: utf-8 
-"""core.py (c) 2014-2016 Matthew J Ernisse <matt@going-flying.com>
+"""core.py (c) 2014-2018 Matthew J Ernisse <matt@going-flying.com>
 
 Base handler for urls.
 
+Redistribution and use in source and binary forms,
+with or without modification, are permitted provided
+that the following conditions are met:
+
+    * Redistributions of source code must retain the
+      above copyright notice, this list of conditions
+      and the following disclaimer.
+    * Redistributions in binary form must reproduce
+      the above copyright notice, this list of conditions
+      and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-import cookielib
 import cgi
 import re
+import requests
 import sys
-import urllib
-import urllib2
-import urlparse
 
 from botlogger import *
 
@@ -19,27 +38,17 @@ def processurl(url):
 	''' try to fetch a url from the interwebs. ''' 
 
 	try:
-		# some websites do a redirect dance that requires cookies.
-		jar = cookielib.CookieJar()
-		opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(jar))
-		urllib2.install_opener(opener)
+		response = requests.get(url, headers={
+				"User-Agent": "uberurls/3.0 (python)"
+			},
+			timeout=2
+		)
+		response.raise_for_status()
+	except Exception as e:
+		logException(e)
+		return None
 
-		parsed = urlparse.urlparse(url)
-		query = urlparse.parse_qs(parsed.query)
-
-		request = urllib2.Request(url)
-		request.add_header('User-Agent', 'uberurls/2.0 (python)')
-		response = urllib2.urlopen(request)
-
-		# Don't keep cookies beyond what is required to service
-		# the initial request.
-		jar.clear()
-
-	except urllib2.URLError, e:
-		err('core.processurl(): failed to load %s: %s' % (url, e.reason))
-		return "%s is dead %s ╯(°□°)╯ ︵┻━┻ " % (url, e.reason)
-
-	log('core.processurl(): loaded %s' % (url))
+	log("core.processurl(): loaded {}".format(url))
 	return response
 
 #
@@ -57,41 +66,18 @@ def detect_valid_urls(s):
 
 		return matches
 
-	except Exception, e:
+	except Exception as e:
+		logException(e)
 		return []
 
-
-def sanitize_url(url):
-	''' Fetch a url and return the ultimate destination to defeat all
-	the url shorteners link trackers.
-
-	'''
-
-	global URLLIB_RESPONSE
-
-	try:
-		if not URLLIB_RESPONSE:
-			return url
-
-		canonical_url = URLLIB_RESPONSE.geturl()
-		if url != canonical_url:
-			return canonical_url
-
-		return url
-
-	except Exception, e:
-		return url
-
 def load_title(url, soup):
-	''' Return the title of the page. '''
+	''' Return the title of the page.  In case of error, return what we
+	were able to convert.'''
 
 	try:
-		title = cgi.escape(soup.title.string)
-		title = title.encode('ascii', 'xmlcharrefreplace')
-		title = title.strip()
+		title = soup.title.text.strip()
 
-	except Exception, e:
-		err('core.load_title(): error: %s\n' % (str(e)))
-		return None
+	except Exception as e:
+		logException(e)
 
 	return title

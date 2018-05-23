@@ -1,5 +1,5 @@
-#!/usr/bin/python -tt
-''' bot.py
+''' bot.py (c) 2013 - 2018 Matthew Ernisse <matt@going-flying.com>
+All Rights Reserved
 
 This is the main module of the IRC robot.  I envision him as Marvin, The
 Paranoid Android.
@@ -16,22 +16,40 @@ config.owners.
 
 Marvin has a brain the size of a planet, it is implemented in core.py.
 
+Redistribution and use in source and binary forms,
+with or without modification, are permitted provided
+that the following conditions are met:
+
+    * Redistributions of source code must retain the
+      above copyright notice, this list of conditions
+      and the following disclaimer.
+    * Redistributions in binary form must reproduce
+      the above copyright notice, this list of conditions
+      and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
-import config
 import re
 import sys
 import time
 
 from botlogger import *
 from twisted.internet import protocol, reactor, task
-from twisted.internet.ssl import ClientContextFactory
 from twisted.words.protocols import irc
 
 # bot modules - callbacks should be registered at import so the import order
 # here is also the execution order.
-
-# import myself so I can call rebuild on myself.
-import bot
 
 # core should always be early.
 import core
@@ -39,28 +57,46 @@ import core
 # this should happen before everything else.
 import nethack
 
-import variables
+#import variables
 import autoop
 #import idler
 
 import ascii
 import besomebody
-#import bugs
-#import remotecontrol
-import stock
-import weather
-import sms
 import uberurls
 import topic
+import twitchNotifier
 
 # this should happen last
 import hateball
 
+
 class Bot(irc.IRCClient):
-	chatters = {}
-	debug = None
-	owners = config.owners
-	task = None
+	#
+	# Shims from Factory
+	#
+
+	@property
+	def nickname(self):
+		return self.factory.nickname
+
+	@nickname.setter
+	def nickname(self, value):
+		if not self.factory:
+			raise Exception("Cannot set value until factory assignment.")
+		self.factory.nickname = value
+
+	@property
+	def realname(self):
+		return self.factory.realname
+
+	@property
+	def password(self):
+		return self.factory.password
+
+	@property
+	def username(self):
+		return self.factory.nickname
 
 	def _forMe(self, msg):
 		''' determine if a message was sent to me, if it was strip
@@ -74,20 +110,22 @@ class Bot(irc.IRCClient):
 				msg)
 		return False
 
-	#
-	# Factory properties
-	#
-	def _get_password(self):
-		return self.factory.password
-	password = property(_get_password)
 
-	def _get_nickname(self):
-		return self.factory.nickname
-	nickname = property(_get_nickname)
+	def connectionMade(self):
+		super().connectionMade()
+		self.chatters = {}
+		self.debug = self.factory.config.getBool("debug")
+		self.owners = self.factory.config.getList("owners")
+		self.task = None
+		self.channels = self.factory.config.getList("channels")
+		log("connection established.")
 
-	def _get_channels(self):
-		return self.factory.channels
-	channels = property(_get_channels)
+	def connectionLost(self, reason):
+		log("Connection closed: {}".format(reason.getErrorMessage()))
+		try:
+			self.task.stop()
+		except Exception as e:
+			logException(e)
 
 	#
 	# Actions
@@ -114,17 +152,7 @@ class Bot(irc.IRCClient):
 
 			return
 		
-		# I don't get why super(Bot, self).msg() doesn't work here...
-		try:
-			message = str(message)
-		except Exception, e:
-			log('msg() failed to turn %s into string.  %e' % (
-				message,
-				str(e)
-			))
-			message = "Unable to convert supplied message to str."
-
-		irc.IRCClient.msg(self, user, message, length)
+		super().msg(user, message, length)
 		if only:
 			raise core.StopCallBacks
 
@@ -206,6 +234,7 @@ class Bot(irc.IRCClient):
 		core.py.
 
 		'''
+
 		try:
 			for mod in core.MODULES:
 				if getattr(sys.modules[mod], 'privmsg', None):
@@ -214,6 +243,9 @@ class Bot(irc.IRCClient):
 
 		except core.StopCallBacks:
 			pass
+
+		except Exception as e:
+			logException(e)
 
 	def signedOn(self):
 		''' Called upon successful connection to the server '''
@@ -276,7 +308,7 @@ class Bot(irc.IRCClient):
 		''' Called when a user PARTs a channel. '''
 		try:
 			self.chatters[channel]['users'].pop(user)
-		except KeyError, e:
+		except KeyError as e:
 			err('mystery user %s left %s' % (user, channel))
 		
 		for mod in core.MODULES:
@@ -403,30 +435,14 @@ class Bot(irc.IRCClient):
 class BotFactory(protocol.ClientFactory):
 	protocol = Bot
 
-	def __init__(self, nickname, channels, password=None):
-		self.nickname = nickname
-		self.channels = channels
-		self.password = password
+	def __init__(self, config):
+		self.config = config
+		self.nickname = config.getStr("nickname")
+		self.password = config.getStr("password")
+		self.realname = config.getStr("realname")
 	
-	def connectionLost(self, connector, reason):
-		err('Disconnected (%s), retrying...' % reason)
-		time.sleep(10)
-		connector.connect()
+	def clientConnectionLost(self, connector, reason):
+		pass
 
-	def connectionFailed(self, connector, reason):
-		err('Connection failed, %s.  Exiting.' % reason)
-		sys.exit(127)
-
-if __name__ == '__main__':
-	if config.ssl:
-		log('Connecting to %s:%i with SSL' % (config.host, config.port))
-		reactor.connectSSL(config.host, config.port,
-			BotFactory(config.nickname, config.channels,
-			config.password), ClientContextFactory())
-	else:
-		log('Connecting to %s:%i' % (config.host, config.port))
-		reactor.connectTCP(config.host, config.port,
-			BotFactory(config.nickname, config.channels,
-			config.password))
-
-	reactor.run()
+	def clientConnectionFailed(self, connector, reason):
+		pass

@@ -11,80 +11,90 @@ This could be useful if you want to extend parts of the bot but not register
 callbacks.
 
 '''
-import pickle
 import re
+import json
 from botlogger import *
 from twisted.python.rebuild import rebuild
 
 nickname = ''
 MODULES = []
 
-class Brain(dict):
-	''' Implement a simple persistant key, value storage object.  This 
-	saves state by overloading __setitem__ and __delitem__ to pickle the
-	object to disk and __init__ to load the object from disk.
+class Configuration(object):
+	def __init__(self, fileName=None):
+		if fileName:
+			self.load(fileName)
 
-	The file to pickle to/from is stored as the fn attribute.
+	def _combine(self, src, tgt):
+		""" Deep merge tgt into src, modifying src. """
+		for k, v in tgt.items():
+			if k in src.keys() and isinstance(src[k], dict):
+				self._combine(src[k], v)
+			else:
+				src[k] = v
 
-	'''
-	fn = 'mybrain.pkl'
-
-	def __init__(self, **kwargs):
-		''' create a new Brain.  If a mapping is specified with the
-		constructor then it OVERWRITES any existing saved state.
-
+	def load(self, fileName):
+		''' Load fileName.json and optionally fileName.private.json and
+		store the parsed object as Configuration.config.
 		'''
-		self._load()
-		super(Brain, self).__init__(**kwargs)
+		if not os.path.exists(fileName):
+			raise ValueError("{} does not exist".format(fileName))
 
-	def _load(self):
-		''' Load the object from disk '''
-		if not os.path.exists(self.fn):
-			return
+		log("Loading {}".format(fileName))
+		with open(fileName) as fd:
+			obj = json.load(fd)
 
-		fd = open(self.fn, 'r')
+		self.config = obj
 
-		selfie = pickle.load(fd)
-		fd.close()
+		fn, ext = os.path.splitext(fileName)
+		pvtFileName = "{}.private{}".format(fn, ext)
+		if os.path.exists(pvtFileName):
+			log("Loading {}".format(pvtFileName))
+			with open(pvtFileName) as fd:
+				obj = json.load(fd)
 
-		for k,v in selfie.iteritems():
-			log('loaded %i items for %s' % (len(v), k))
-			super(Brain, self).__setitem__(k, v)
+			self._combine(self.config, obj)
 
-	def _save(self):
-		''' Save the object to disk '''
-		try:
-			fd = open(self.fn, 'wb')
-			pickle.dump(self, fd)
-			fd.flush()
-			fd.close()
-		except IOError, e:
-			log('failed to write brain, ioerror: %s' % str(e))
+	def getBool(self, key):
+		""" Returns key as a bool, returns None if it does not exist. """
+		if not key in self.config.keys():
+			return None
 
-		log('wrote brain to disk')
+		return bool(self.config[key])
 
-	def __delitem__(self, k):
-		''' B.__delitem__(k) <==> del B[k] '''
-		super(Brain, self).__delitem__(k)
+	def getChildren(self, key):
+		""" Return a Configuration object with a view of the given subtree."""
+		if not key in self.config.keys():
+			raise KeyError("Requested key {} not found.".format(key))
 
-		self._save()
+		children = Configuration(None)
+		children.config = self.config[key]
+		return children
 
-	def __setitem__(self, k, v):
-		''' B.__setitem__(k, v) <==> B[k] = v '''
-		super(Brain, self).__setitem__(k, v)
+	def getInt(self, key, default=None):
+		""" Returns key as an int, returns default if set if the key does
+		not exist or raises a KeyError.
+		"""
+		if not key in self.config.keys():
+			if default:
+				return default 
 
-		self._save()
+			raise KeyError("Requested key {} not found.".format(key))
 
-	def getfor(self, who, k, default=None):
-		''' B.getfor(w,k[,d]) -> B[w][k] if k in w and w in B else d.'''
-		try:
-			return self[who][k]
-		except KeyError:
-			return default
+		return int(self.config[key])
+
+	def getList(self, key):
+		""" Convenince function for self.config.get(key, []) """
+		return self.config.get(key, [])
+
+	def getStr(self, key):
+		""" Convenince function for self.config.get(key, "") """
+		return self.config.get(key, "")
+
 
 class StopCallBacks(Exception):
 	''' Exception to stop processing callbacks '''
 	pass
+
 
 def privmsg(self, user, channel, msg):
 		''' Bot control actions, both public and private. '''
@@ -188,5 +198,5 @@ def register_module(module):
 	else:
 		log('%s Reloaded.' % module)
 
-brain = Brain()
+config = Configuration("config.json")
 register_module(__name__)
