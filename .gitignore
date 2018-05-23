@@ -1,5 +1,6 @@
 *.pyc
 *.json
+__pycache__
 autoop.conf
 config.py
 private.py
