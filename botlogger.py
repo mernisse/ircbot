@@ -28,8 +28,6 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
 import logging.handlers
 
-SYSLOG_HOST = ('localhost', 514)
-SYSLOG_FACILITY = logging.handlers.SysLogHandler.LOG_USER
 logger = None
 
 
@@ -59,10 +57,7 @@ logger.setLevel(logging.DEBUG)
 consoleHandler = logging.StreamHandler()
 consoleHandler.setLevel(logging.DEBUG)
 
-syslogHandler = logging.handlers.SysLogHandler(
-	address=SYSLOG_HOST,
-	facility=SYSLOG_FACILITY
-)
+syslogHandler = logging.handlers.SysLogHandler("/dev/log")
 syslogHandler.setLevel(logging.INFO)
 
 logger.addHandler(consoleHandler)
