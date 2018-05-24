@@ -1,4 +1,4 @@
-# coding: utf-8 
+# coding: utf-8
 """core.py (c) 2014-2018 Matthew J Ernisse <matt@going-flying.com>
 
 Base handler for urls.
@@ -31,12 +31,11 @@ import cgi
 import re
 import requests
 import sys
+from botlogger import debug, err, log, logException
 
-from botlogger import *
 
 def processurl(url):
-	''' try to fetch a url from the interwebs. ''' 
-
+	''' try to fetch a url from the interwebs. '''
 	try:
 		response = requests.get(url, headers={
 				"User-Agent": "uberurls/3.0 (python)"
@@ -51,12 +50,12 @@ def processurl(url):
 	log("core.processurl(): loaded {}".format(url))
 	return response
 
+
 #
 # Helpers
 #
 def detect_valid_urls(s):
 	''' Return a list of URLs extracted from a string. '''
-
 	r = re.compile('((?:https?://|www\.|ftp\.)[-\w\d+&@#/\\%=~_|$?!:;,.]*[-\w\d+&@#/\\%=~_|$])', re.I)
 
 	try:
@@ -69,6 +68,7 @@ def detect_valid_urls(s):
 	except Exception as e:
 		logException(e)
 		return []
+
 
 def load_title(url, soup):
 	''' Return the title of the page.  In case of error, return what we

@@ -28,22 +28,22 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-
-__all__ = ["core", "itunes", "soundcloud", "youtube"]
-__face__ = "( ͡° ͜ʖ ͡°)"
-
 import requests
 import sys
 
 from . import *
 from bs4 import BeautifulSoup
-from botlogger import *
+from botlogger import debug, err, log, logException
 from html.parser import HTMLParser
+
+__all__ = ["core", "itunes", "soundcloud", "youtube"]
+__face__ = "( ͡° ͜ʖ ͡°)"
+
 
 def processurl(url):
 	''' Meta-function.
 	Call all submodules processurl functions.  The function should
-	return None if it doesn't care.  Otherwise it should return a 
+	return None if it doesn't care.  Otherwise it should return a
 	string or a urllib2 Response object.
 	'''
 	poised = None
@@ -85,6 +85,7 @@ def processurl(url):
 	title = parser.unescape(title)
 	return (url, title)
 
+
 def sanitize_url(url):
 	''' Meta-function.
 	Call all submodules sanitize_url functions.  The function should
@@ -101,6 +102,7 @@ def sanitize_url(url):
 		url = sys.modules[mod].sanitize_url(url)
 
 	return url
+
 
 def load_title(url, response):
 	''' Meta-function.

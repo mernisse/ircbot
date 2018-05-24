@@ -1,4 +1,4 @@
-''' core.py - (c) 2009, 2013 - 2018 Matthew J. Ernisse <matt@going-flying.com>
+""" core.py - (c) 2009, 2013 - 2018 Matthew J. Ernisse <matt@going-flying.com>
 
 Provide core functions for the bot
 
@@ -33,14 +33,17 @@ OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-'''
-import re
+"""
 import json
-from botlogger import *
+import os
+import re
+import sys
+from botlogger import debug, err, log, logException
 from twisted.python.rebuild import rebuild
 
 nickname = ''
 MODULES = []
+
 
 class Configuration(object):
 	def __init__(self, fileName=None):
@@ -79,14 +82,14 @@ class Configuration(object):
 
 	def getBool(self, key):
 		""" Returns key as a bool, returns None if it does not exist. """
-		if not key in self.config.keys():
+		if key not in self.config.keys():
 			return None
 
 		return bool(self.config[key])
 
 	def getChildren(self, key):
 		""" Return a Configuration object with a view of the given subtree."""
-		if not key in self.config.keys():
+		if key not in self.config.keys():
 			raise KeyError("Requested key {} not found.".format(key))
 
 		children = Configuration(None)
@@ -97,9 +100,9 @@ class Configuration(object):
 		""" Returns key as an int, returns default if set if the key does
 		not exist or raises a KeyError.
 		"""
-		if not key in self.config.keys():
+		if key not in self.config.keys():
 			if default:
-				return default 
+				return default
 
 			raise KeyError("Requested key {} not found.".format(key))
 
@@ -137,27 +140,31 @@ def privmsg(self, user, channel, msg):
 		#
 		matches = re.search(r'^\s*help', msg, re.I)
 		if matches:
-			self.msg(dest,
-				'Visit http://mernisse.github.io/ircbot',
-				only=True)
+			self.msg(
+				dest,
+				"I'm sorry Dave, I can't help you.",
+				only=True
+			)
 
 		#
 		# bot control actions are only honored from owners and are
 		# returned via PRIVMSG back to the owner (not the channel, if
 		# originally uttered in public.
 		#
-		if not nick in self.owners:
+		if nick not in self.owners:
 			return
 
 		matches = re.search(r'^\s*reload\s+([a-z0-9_]+)\s*$', msg)
 		if matches:
 			module = matches.group(1)
 			if module not in sys.modules:
-				self.msg(nick,
-					'Module %s is not loaded.' % module,
-					only=True)
+				self.msg(
+					nick,
+					"Module {} is not loaded.".format(module),
+					only=True
+				)
 
-			log('Reloading module %s at request of %s' % (
+			log('Reloading module {} at request of {}'.format(
 				module,
 				nick
 			))
@@ -165,8 +172,11 @@ def privmsg(self, user, channel, msg):
 			# I am told twisted's rebuild is better than the
 			# built in reload().
 			rebuild(sys.modules[module])
-			self.msg(nick,
-				'Module %s reloaded.' % module, only=True)
+			self.msg(
+				nick,
+				"Module {} reloaded.".format(module),
+				only=True
+			)
 
 		matches = re.search(r'^\s*debug\s*$', msg, re.I)
 		if matches:
@@ -175,39 +185,54 @@ def privmsg(self, user, channel, msg):
 			else:
 				self.debug = True
 
-			self.msg(nick,
-				'Debug is now %s' % str(self.debug), only=True)
+			self.msg(
+				nick,
+				"Debug is now {}".format(self.debug),
+				only=True
+			)
 
 		matches = re.search(r'^\s*join\s+(#[a-z0-9_]+)\s*$', msg)
 		if matches:
 			channel = matches.group(1)
 			if channel in self.chatters:
-				self.msg(nick,
-					'Already in %s' % channel, only=True)
+				self.msg(
+					nick,
+					"Already in {}".format(channel),
+					only=True
+				)
 
 			self.join(channel)
-			self.msg(nick,
-				'Joined %s' % channel, only=True)
+			self.msg(
+				nick,
+				'Joined {}'.format(channel),
+				only=True
+			)
 
 		matches = re.search(r'^\s*leave\s+(#[a-z0-9_]+)\s*$', msg)
 		if matches:
 			channel = matches.group(1)
 			if channel not in self.chatters:
-				self.msg(nick, 'Not in %s' % channel, only=True)
+				self.msg(nick, 'Not in {}'.format(channel), only=True)
 
-			self.leave(channel, '%s has banished me.' % nick)
-			self.msg(nick, 'Left %s' % channel, only=True)
+			self.leave(channel, '{} has banished me.'.format(nick))
+			self.msg(nick, 'Left {}'.format(channel), only=True)
 
 		matches = re.search(r'^\s*spy\s*$', msg)
 		if matches:
-			self.msg(nick, 
-				'Chatters:\n%s' % str(self.chatters), only=True)
+			self.msg(
+				nick,
+				'Chatters:\n{}'.format(str(self.chatters)),
+				only=True
+			)
 
 		matches = re.search(r'^\s*listmods\s*', msg, re.I)
 		if matches:
-			self.msg(nick,
-				'Loaded Modules: %s.' % ','.join(MODULES),
-				only=True)
+			self.msg(
+				nick,
+				'Loaded Modules: {}.'.format(','.join(MODULES)),
+				only=True
+			)
+
 
 def register_module(module):
 	''' Register your module with the bot so that your callbacks will
@@ -217,9 +242,10 @@ def register_module(module):
 	global MODULES
 	if module not in MODULES:
 		MODULES.append(module)
-		log('%s Registered.' % module)
+		log('{} Registered.'.format(module))
 	else:
-		log('%s Reloaded.' % module)
+		log('{} Reloaded.'.format(module))
+
 
 config = Configuration("config.json")
 register_module(__name__)

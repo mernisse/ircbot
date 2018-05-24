@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-''' main.py (c) 2013 - 2018 Matthew Ernisse <matt@going-flying.com>
+""" main.py (c) 2013 - 2018 Matthew Ernisse <matt@going-flying.com>
 All Rights Reserved
 
 This is the main module of the IRC robot.  I envision him as Marvin, The
@@ -28,24 +28,27 @@ OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-'''
+"""
 import core
 import bot
 import sys
 
-from botlogger import *
+from botlogger import debug, err, log, logException
 from twisted.internet import reactor
 from twisted.internet.ssl import ClientContextFactory
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
 	hostname = core.config.getStr("host")
 	portnum = core.config.getInt("port")
 
 	if core.config.getBool("ssl"):
 		log('Connecting to {}:{} with SSL'.format(hostname, portnum))
-		reactor.connectSSL(hostname, portnum,
-			bot.BotFactory(core.config), ClientContextFactory())
+		reactor.connectSSL(
+			hostname,
+			portnum,
+			bot.BotFactory(core.config),
+			ClientContextFactory()
+		)
 	else:
 		log('Connecting to {}:{}'.format(hostname, portnum))
 		reactor.connectTCP(hostname, portnum, bot.BotFactory(core.config))

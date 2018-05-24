@@ -27,12 +27,12 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-
 import core
 import os
 import re
 
-from botlogger import *
+from botlogger import logException
+
 
 def privmsg(self, user, channel, msg):
 	dst = user.split('!', 1)[0]
@@ -45,7 +45,7 @@ def privmsg(self, user, channel, msg):
 
 	matches = re.search(r'^ascii\s+([a-z0-9_.-]+)\s*$', msg, re.IGNORECASE)
 	if not matches:
-		return 
+		return
 
 	what = matches.group(1).lower()
 
@@ -58,9 +58,9 @@ def privmsg(self, user, channel, msg):
 					continue
 				fn, ext = os.path.splitext(os.path.basename(f))
 				available.append(fn)
-		
+
 		except Exception as e:
-			err('ascii - problem listing options: %s' % str(e))
+			logException(e)
 			self.msg(dst, "It's a secret.")
 
 		self.msg(dst, ' '.join(available), only=True)
@@ -80,6 +80,7 @@ def privmsg(self, user, channel, msg):
 
 	raise core.StopCallBacks
 
+
 def ascii(what):
 	# The utterance regex above only matches these characters, but
 	# we'll double-check, Just In Case.
@@ -94,5 +95,6 @@ def ascii(what):
 	art = fd.readlines()
 	fd.close()
 	return art
+
 
 core.register_module(__name__)

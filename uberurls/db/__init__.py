@@ -29,13 +29,14 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import core
 import MySQLdb
 
-from botlogger import *
+from botlogger import debug, err, log, logException
 
 config = core.config.getChildren("uberurls")
 SQL_HOST = config.getStr("sql_host")
 SQL_USER = config.getStr("sql_user")
 SQL_PASS = config.getStr("sql_pass")
 SQL_DB = config.getStr("sql_db")
+
 
 def fetch_url_db(url):
 	''' Check to see if a URL is in the database already '''
@@ -48,13 +49,16 @@ def fetch_url_db(url):
 	row = cursor.fetchone()
 
 	if not row:
-		cursor.execute("SELECT * FROM urls WHERE shorturl = %s", 
-			(url,))
+		cursor.execute(
+			"SELECT * FROM urls WHERE shorturl = %s",
+			(url,)
+		)
 		row = cursor.fetchone()
 
 	sql.close()
 
 	return row
+
 
 def add_url_to_db(url, short, speaker):
 	''' Add a new URL to the database '''
@@ -66,10 +70,11 @@ def add_url_to_db(url, short, speaker):
 	try:
 		sql = MySQLdb.connect(SQL_HOST, SQL_USER, SQL_PASS, SQL_DB)
 		cursor = sql.cursor()
-		cursor.execute("""INSERT INTO urls 
+		cursor.execute(
+			"""INSERT INTO urls
 				(url, shorturl, user, count)
-				VALUES(%s, %s, %s, %s)""", 
-				(url, short, speaker, count)
+				VALUES(%s, %s, %s, %s)""",
+			(url, short, speaker, count)
 		)
 		sql.commit()
 		sql.close()
@@ -77,17 +82,19 @@ def add_url_to_db(url, short, speaker):
 		logException(e)
 		raise
 
+
 def update_url_in_db(short, count):
 	''' Update the URL in the DB '''
 
 	global SQL_HOST, SQL_USER, SQL_PASS, SQL_DB
-	count = int(count) + 1 
+	count = int(count) + 1
 
 	try:
 		sql = MySQLdb.connect(SQL_HOST, SQL_USER, SQL_PASS, SQL_DB)
 		cursor = sql.cursor()
-		cursor.execute("UPDATE urls SET count = %s WHERE shorturl = %s",
-				(count, short)
+		cursor.execute(
+			"UPDATE urls SET count = %s WHERE shorturl = %s",
+			(count, short)
 		)
 		sql.commit()
 		sql.close()

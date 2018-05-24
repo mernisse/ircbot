@@ -1,4 +1,4 @@
-# coding: utf-8 
+# coding: utf-8
 """__init__.py - (c) 2013 - 2018 Matthew J. Ernisse <matt@going-flying.com>
 
 Catch, log, and shorten urls.  Uses uber.hk because that is mine.
@@ -28,16 +28,16 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import core
-from botlogger import *
+from botlogger import debug, err, log, logException
 
 from . import handlers
 
 __all__ = ["handlers"]
 
+
 def privmsg(self, user, channel, msg):
 	''' Module hook function for the ircbot.  Called on receipt of
 	a privmsg.
-
 	'''
 	speaker = user.split('!', 1)[0]
 
@@ -64,5 +64,6 @@ def privmsg(self, user, channel, msg):
 		logException(e)
 
 	raise core.StopCallBacks
+
 
 core.register_module(__name__)

@@ -1,4 +1,4 @@
-# coding: utf-8 
+# coding: utf-8
 """uber/__init__.py - (c) 2014 - 2018 Matthew Ernisse <matt@going-flying.com>
 All Rights Reserved.
 
@@ -33,14 +33,14 @@ import json
 import requests
 import urllib.parse
 
-from botlogger import *
+from botlogger import debug, err, log, logException
+
 
 def shorten(url):
 	''' shorten the given url using the super excellent uber.hk
 	url shortening service!
-
 	'''
-	logger.debug('uber.hk - got url %s' % url)
+	debug('uber.hk - got url %s' % url)
 	parsed = urllib.parse.urlparse(url)
 	if parsed.netloc == 'uber.hk':
 		return url
@@ -52,12 +52,13 @@ def shorten(url):
 
 		resp = requests.post(post_url.format(api_key, quoted_url))
 		data = resp.json()
-		logger.debug('uber.hk - API reply %s' % str(data))
+		debug('uber.hk - API reply %s' % str(data))
 		resp.raise_for_status()
 		return 'http://uber.hk/%s' % data['code']
 
 	except Exception as e:
 		logException(e)
 		return url
+
 
 config = core.config.getChildren("uberurls")

@@ -1,9 +1,9 @@
-''' topic.py (c) 2013 - 2018 Matthew J Ernisse <matt@going-flying.com>
+""" topic.py (c) 2013 - 2018 Matthew J Ernisse <matt@going-flying.com>
 
-Take a custom BSD-style calendar(1) file and set a topic on all joined 
+Take a custom BSD-style calendar(1) file and set a topic on all joined
 channels from the notable events of the day.
 
-This tries to be polite, if the topic doesn't look like an event it won't 
+This tries to be polite, if the topic doesn't look like an event it won't
 change the topic.
 
 Redistribution and use in source and binary forms,
@@ -29,7 +29,7 @@ OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-'''
+"""
 import core
 import feedparser
 import random
@@ -37,9 +37,10 @@ import re
 import time
 import os
 
-from botlogger import *
+from botlogger import debug, err, log, logException
 
 EVENTS = {}
+
 
 def load_alternate_rss(url):
 	''' Load an alternate source from an RSS feed '''
@@ -55,6 +56,7 @@ def load_alternate_rss(url):
 	except Exception as e:
 		logException(e)
 		return
+
 
 def load_all_calendars():
 	""" Load all calendar files from a directory. """
@@ -72,6 +74,7 @@ def load_all_calendars():
 
 	log('topic - loaded {} events.'.format(len(EVENTS)))
 
+
 def load_calendar(fn):
 	''' load a bsd style calendar(1) file '''
 	global EVENTS
@@ -87,9 +90,9 @@ def load_calendar(fn):
 				day = matches.group(2)
 				event = matches.group(3)
 
-				mmdd = "%s-%s" % ( month, day )
+				mmdd = "{}-{}".format(month, day)
 
-				if not mmdd in EVENTS:
+				if mmdd not in EVENTS:
 					EVENTS[mmdd] = [event]
 				else:
 					EVENTS[mmdd].append(event)
@@ -98,29 +101,29 @@ def load_calendar(fn):
 		logException(e)
 		return
 
+
 def emit_event(month, day):
 	''' return an event string, if nothing is in the calendar file for
 	today, emit a default string.
 
 	'''
 	global EVENTS
-	mmdd = "%s-%s" % (month, day)
+	mmdd = "{}-{}".format(month, day)
 
-	if not mmdd in EVENTS:
+	if mmdd not in EVENTS:
 		url = "http://www.history.com/this-day-in-history/rss"
 		event = load_alternate_rss(url)
 		if not event:
-			return '%s/%s Nothing ever happens.' % (
-				month, day
-			)
+			return '{}/{} Nothing ever happens.'.format(month, day)
 
-		return '%s/%s %s' % (month, day, event) 
+		return '{}/{} {}'.format(month, day, event)
 
-	return "%s/%s %s" % (
+	return "{}/{} {}".format(
 		month,
 		day,
-		EVENTS[mmdd][random.randint(0, len(EVENTS[mmdd]) -1)]
+		EVENTS[mmdd][random.randint(0, len(EVENTS[mmdd]) - 1)]
 	)
+
 
 def topicUpdated(self, user, channel, topic):
 	''' topicUpdated() gets called by the default irc_RPL_TOPIC()
@@ -152,10 +155,12 @@ def topicUpdated(self, user, channel, topic):
 
 	self.topic(channel, event)
 
+
 def periodic(self):
 	''' get all the topics for all the channels we are joined to. '''
 	for channel in self.chatters:
 		self.topic(channel)
+
 
 load_all_calendars()
 core.register_module(__name__)

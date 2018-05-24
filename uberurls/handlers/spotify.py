@@ -1,4 +1,4 @@
-# coding: utf-8 
+# coding: utf-8
 """spotify.py (c) 2017 - 2018 Matthew J Ernisse <matt@going-flying.com>
 
 Sanitize functions for Spotify URLS
@@ -29,8 +29,8 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import re
 import urllib.parse
+from botlogger import debug, err, log, logException
 
-from botlogger import *
 
 def load_title(url, soup):
 	''' Load the Spotify item in a more obvious way.'''
@@ -40,7 +40,7 @@ def load_title(url, soup):
 	if not re.search(r'open\.spotify\.com', parsed_url.netloc, re.I):
 		return None
 
-	if not 'i' in parsed_qs:
+	if 'i' not in parsed_qs:
 		log('spotifyitunes.load_title(): no item in url.')
 		return None
 

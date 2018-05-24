@@ -1,4 +1,4 @@
-''' nethack.py (c) 2009, 2013 - 2018 Matthew J. Ernisse <matt@going-flying.com>
+""" nethack.py (c) 2009, 2013 - 2018 Matthew J. Ernisse <matt@going-flying.com>
 
 Module for the IRC robot that implements similar function to the Nethack
 witty sayings.
@@ -28,8 +28,7 @@ OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-'''
-
+"""
 import core
 from os import stat
 from pom import pom
@@ -38,11 +37,12 @@ import re
 from stat import ST_MTIME
 from time import time
 
-from botlogger import *
+from botlogger import debug, err, log, logException
 
 NH_FIRED = {}
 FORTUNES = []
 FORTUNES_TSTAMP = 0
+
 
 def load_fortunes():
 	global FORTUNES, FORTUNES_TSTAMP
@@ -71,6 +71,7 @@ def load_fortunes():
 
 	return True
 
+
 def privmsg(self, user, channel, msg):
 	msg = self._forMe(msg)
 	if not msg:
@@ -87,21 +88,22 @@ def privmsg(self, user, channel, msg):
 	# The "Phase of the moon" is 99% - 100% or 0% - 1%;
 	# let's play ball.
 	global NH_FIRED
-	if not dst in NH_FIRED.keys():
+	if dst not in NH_FIRED.keys():
 		NH_FIRED[dst] = 0
 
 	if NH_FIRED[dst] > (time() - config.getInt("backoff")):
-		# We fired recently (within the last 2h), so 
+		# We fired recently (within the last 2h), so
 		# please donut annoy the channel.
 		return
 
 	if not load_fortunes():
 		self.msg(dst, "The filesystem error hits! Your nethack.nki turns to dust!--More--")
-		NH_FIRED[dst] = time();
+		NH_FIRED[dst] = time()
 
 	if len(FORTUNES) > 0:
-		NH_FIRED[dst] = time();
+		NH_FIRED[dst] = time()
 		self.msg(dst, FORTUNES[randint(0, len(FORTUNES) - 1)])
+
 
 #
 # preload fortunes.

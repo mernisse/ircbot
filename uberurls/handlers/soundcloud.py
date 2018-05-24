@@ -1,4 +1,4 @@
-# coding: utf-8 
+# coding: utf-8
 """soundcloud.py (c) 2016 - 2018 Matthew J Ernisse <matt@going-flying.com>
 
 Sanitize functions for SoundCloud URLs
@@ -30,6 +30,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import re
 import sys
 import urllib.parse
+
 
 def load_title(url, soup):
 	''' Load the SoundCloud item in a more obvious way.'''

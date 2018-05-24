@@ -30,12 +30,13 @@ import core
 import random
 import re
 
-from botlogger import *
+from botlogger import logException
 
 
 def afraid():
 	'''I am not the Kwisatz Haderach...'''
-	litany = ['I must not fear.',
+	litany = [
+		'I must not fear.',
 		'Fear is the mind-killer.',
 		'Fear is the little-death that brings total obliteration.',
 		'I will face my fear.',
@@ -46,10 +47,12 @@ def afraid():
 	]
 	return '\n'.join(litany)
 
+
 def bhanat():
 	''' /me pours a little out for his homies who are not here. '''
 	ticketnum = random.randint(10000, 999999)
 	return "<postit>%s</postit>" % str(ticketnum)
+
 
 def quote_from_disk(who, index=None):
 	''' emit a quote from nicks/who.txt '''
@@ -61,13 +64,14 @@ def quote_from_disk(who, index=None):
 				sayings.append(line)
 
 	except Exception as e:
-		err('besomebody - failed to load quotes %s' % str(e))
+		logException(e)
 		return "I do not know of whom you speak."
 
 	if not index:
 		index = random.randint(0, len(sayings) - 1)
 
 	return sayings[index]
+
 
 def privmsg(self, user, channel, msg):
 	dst = user.split('!', 1)[0]
@@ -101,6 +105,6 @@ def privmsg(self, user, channel, msg):
 	else:
 		index = matches.group(2)
 		self.msg(dst, quote_from_disk(who, index), only=True)
-	
+
 
 core.register_module(__name__)

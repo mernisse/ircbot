@@ -27,29 +27,31 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import logging
 import logging.handlers
-import os
-import sys
-import syslog
 
 SYSLOG_HOST = ('localhost', 514)
 SYSLOG_FACILITY = logging.handlers.SysLogHandler.LOG_USER
 logger = None
 
+
 def debug(s):
 	global logger
 	logger.debug(s)
+
 
 def err(s):
 	global logger
 	logger.error(s)
 
+
 def logException(e):
 	global logger
 	logger.error("Exception: ", exc_info=e)
 
+
 def log(s):
 	global logger
 	logger.info(s)
+
 
 logger = logging.getLogger("ircbot")
 logger.setLevel(logging.DEBUG)
@@ -58,8 +60,8 @@ consoleHandler = logging.StreamHandler()
 consoleHandler.setLevel(logging.DEBUG)
 
 syslogHandler = logging.handlers.SysLogHandler(
-	address = SYSLOG_HOST,
-	facility = SYSLOG_FACILITY
+	address=SYSLOG_HOST,
+	facility=SYSLOG_FACILITY
 )
 syslogHandler.setLevel(logging.INFO)
 

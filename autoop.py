@@ -1,4 +1,4 @@
-''' autoop.py (c) 2013 - 2018 Matthew J. Ernisse <matt@going-flying.com>
+""" autoop.py (c) 2013 - 2018 Matthew J. Ernisse <matt@going-flying.com>
 All Rights Reserved.
 
 Automatically try to +o people who join the channel with a matching usermask
@@ -26,13 +26,10 @@ OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-'''
-
+"""
 import core
 import re
 import time
-
-from botlogger import *
 
 
 def check_masks(userhost):
@@ -42,9 +39,10 @@ def check_masks(userhost):
 
 	return False
 
+
 def whoisReply(self, nick, userinfo):
-	if not 'username' in userinfo or \
-		not 'hostname' in userinfo:
+	if 'username' not in userinfo or \
+		'hostname' not in userinfo:
 		return
 
 	if nick == self.nickname:
@@ -58,5 +56,6 @@ def whoisReply(self, nick, userinfo):
 	for channel in self.chatters:
 		if nick in self.chatters[channel]['users']:
 			self.mode(channel, True, "o", user=nick)
+
 
 core.register_module(__name__)

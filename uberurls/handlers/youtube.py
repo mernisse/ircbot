@@ -1,4 +1,4 @@
-# coding: utf-8 
+# coding: utf-8
 """youtube.py (c) 2014 - 2018 Matthew J Ernisse <matt@going-flying.com>
 
 Sanitize functions for Youtube URLs
@@ -30,12 +30,11 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import re
 import urllib.parse
 
+
 def sanitize_url(url):
 	''' cleanup youtube links, also strip the stupid link tracking BS
 	and always make use of HTTPS.
-
 	'''
-
 	parsed_url = urllib.parse.urlparse(url)
 	parsed_qs = urllib.parse.parse_qs(parsed_url.query)
 
