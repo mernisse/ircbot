@@ -55,7 +55,7 @@ def sanitize_url(url):
 			canonical_qs)
 
 	elif 'youtu.be' in parsed_url.netloc:
-		canonical_url = 's%s' % (
+		canonical_url += '%s%s' % (
 			parsed_url.path[1:],
 			canonical_qs)
 

@@ -53,6 +53,9 @@ import core
 
 class Bot(irc.IRCClient):
 	""" This is the robot. """
+	sourceURL = "https://github.com/mernisse/ircbot"
+	versionEnv = "Python"
+	versionName = "Marvin"
 	#
 	# Shims from Factory
 	#
@@ -77,6 +80,11 @@ class Bot(irc.IRCClient):
 	@property
 	def username(self):
 		return self.factory.nickname
+
+	@property
+	def versionNum(self):
+		return core.__version__
+
 
 	def _forMe(self, msg):
 		''' determine if a message was sent to me, if it was strip

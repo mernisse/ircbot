@@ -35,19 +35,21 @@ from botlogger import debug, err, log, logException
 def load_title(url, soup):
 	''' Load the Spotify item in a more obvious way.'''
 	parsed_url = urllib.parse.urlparse(url)
-	parsed_qs = urllib.parse.parse_qs(parsed_url.query)
 
 	if not re.search(r'open\.spotify\.com', parsed_url.netloc, re.I):
 		return None
 
-	if 'i' not in parsed_qs:
-		log('spotifyitunes.load_title(): no item in url.')
-		return None
+	pathParts = parsed_url.path.split("/")
+	_id = pathParts.pop()
+	_type = pathParts.pop()
+
+	print(_id, _type)
+	return None
 
 	item = soup.find('tr', {'adam-id': parsed_qs['i']})
 	if not item:
 		err('spotify.load_title(): failed to find adam-id.')
-		return None
+		return "No adam-id"
 
 	return "Spotify: %s - %s" % (
 		item['preview-artist'], item['preview-title']

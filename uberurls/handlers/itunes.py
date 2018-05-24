@@ -41,13 +41,19 @@ def load_title(url, soup):
 	if not re.search(r'itun\.es|itunes\.apple\.com', parsed_url.netloc, re.I):
 		return None
 
-	if 'i' not in parsed_qs:
-		log('itunes.load_title(): no item in url.')
+	_id = None
+	if 'i' in parsed_qs:
+		_id = parsed_qs['i']
+	else:
+		_id = parsed_url.split("/")[-1]
+
+	if not _id:
+		err('itunes.load_title(): failed to find id.')
 		return None
 
-	item = soup.find('tr', {'adam-id': parsed_qs['i']})
+	item = soup.find('tr', {'adam-id': _id})
 	if not item:
-		err('itunes.load_title(): failed to find adam-id.')
+		print(soup)
 		return None
 
 	return "iTunes: %s - %s" % (

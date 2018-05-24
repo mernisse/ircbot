@@ -38,10 +38,12 @@ import importlib
 import json
 import os
 import re
+import subprocess
 import sys
 from botlogger import debug, err, log, logException
 from twisted.python.rebuild import rebuild
 
+__version__ = "2.0.0"
 nickname = ''
 MODULES = []
 
@@ -257,6 +259,12 @@ def register_module(module):
 	else:
 		log('{} Reloaded.'.format(module))
 
+
+try:
+	revision = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'])
+	__version__ = "{}-{}".format(__version__, revision.strip().decode())
+except:
+	pass
 
 config = Configuration("config.json")
 register_module(__name__)
