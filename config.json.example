@@ -11,6 +11,9 @@
 	"owners": [
 		"yournick"
 	],
+	"modules": [
+		"testmod"
+	],
 	"autoop": {
 		"masks": [
 			"your\\.isp\\.net$",

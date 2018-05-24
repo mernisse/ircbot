@@ -34,6 +34,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+import importlib
 import json
 import os
 import re
@@ -120,6 +121,16 @@ class Configuration(object):
 class StopCallBacks(Exception):
 	''' Exception to stop processing callbacks '''
 	pass
+
+
+def load_modules(modules):
+	""" Import the requested modules """
+	for module in modules:
+		try:
+			importlib.import_module(module)
+		except ImportError as e:
+			err("failed to import {}".format(module))
+			logException(e)
 
 
 def privmsg(self, user, channel, msg):
@@ -249,3 +260,4 @@ def register_module(module):
 
 config = Configuration("config.json")
 register_module(__name__)
+load_modules(config.getList("modules"))

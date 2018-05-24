@@ -48,27 +48,11 @@ from botlogger import debug, err, log, logException
 from twisted.internet import protocol, reactor, task
 from twisted.words.protocols import irc
 
-# bot modules - callbacks should be registered at import so the import order
-# here is also the execution order.
-
-# core should always be early.
 import core
-
-# this should happen before everything else.
-import nethack
-
-import autoop
-import ascii
-import besomebody
-import uberurls
-import topic
-import twitchNotifier
-
-# this should happen last
-import hateball
 
 
 class Bot(irc.IRCClient):
+	""" This is the robot. """
 	#
 	# Shims from Factory
 	#
