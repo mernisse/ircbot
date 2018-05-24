@@ -63,7 +63,7 @@ try:
 			FATES = FATES + line.strip()
 
 		FATES = json.loads(FATES)
-		log("hateball loaded {} fates".foomat(len(FATES)))
+		log("hateball loaded {} fates".format(len(FATES)))
 
 except Exception as e:
 	logException(e)

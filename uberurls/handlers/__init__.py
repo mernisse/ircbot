@@ -31,12 +31,12 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import requests
 import sys
 
-from . import *
+from . import core, itunes, soundcloud, spotify, youtube
 from bs4 import BeautifulSoup
 from botlogger import debug, err, log, logException
 from html.parser import HTMLParser
 
-__all__ = ["core", "itunes", "soundcloud", "youtube"]
+__all__ = ["core", "itunes", "soundcloud", "spotify", "youtube"]
 __face__ = "( ͡° ͜ʖ ͡°)"
 
 
