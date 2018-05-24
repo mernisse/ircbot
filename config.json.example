@@ -1,0 +1,44 @@
+{
+	"host": "localhost",
+	"port":	"6667j",
+	"ssl": "true",
+	"nickname": "marvin",
+	"password": "",
+	"realname": "Marvin the Paranoid Android",
+	"channels": [
+		"#yourchannel"
+	],
+	"owners": [
+		"yournick"
+	],
+	"autoop": {
+		"masks": [
+			"your\\.isp\\.net$",
+		]
+	},
+	"nethack": {
+		"backoff": "3600",
+		"pom_high": "99",
+		"pom_low": "1"
+	},
+	"topic": {
+		"path": "calendars"
+	},
+	"twitch": {
+		"client_id": "your_client_id",
+		"streams": [
+			"your_fav_twitch_person",
+		],
+		"users": [
+			"yournick"
+		]
+	},
+	"uberurls": {
+		"api_url": "https://your.urlshortener.com/?api_key={}&u={}"
+		"api_key": "your_api_key",
+		"sql_host": "localhost",
+		"sql_user": "your_db_user",
+		"sql_pass": "your_db_pass",
+		"sql_db": "your_db_name"
+	}
+}
