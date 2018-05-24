@@ -1,8 +1,8 @@
 A small IRC robot in Python based on Twisted Words.
 
-It supports a number of commands, see the Bot object in bot.py to
-see them.
+Now with Python 3.
 
-It also supports a periodic event that is currently called every 5 minutes.
+Modules are all callback based, fired from the main Twisted Client
+object's loop.  There is a periodic call that is fired every 5 minutes.
 
-A number of interesting modules are also included.
+A number of interesting modules that I use are also included.
