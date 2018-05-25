@@ -33,6 +33,11 @@ import time
 
 
 def check_masks(userhost):
+	""" Check to see if the given userhost is listed in the "masks"
+	array in the "autoop" configuration item.  The masks should be
+	escaped as Python regular expressions as they are passed into
+	re.search().
+	"""
 	for mask in core.config.getChildren("autoop").getList("masks"):
 		if re.search(mask, userhost):
 			return True
@@ -41,6 +46,11 @@ def check_masks(userhost):
 
 
 def whoisReply(self, nick, userinfo):
+	""" Catch the whoisReply callback and pass the usermask of everybody in
+	the channel to check_masks().  Bot() will call whois perodically on the
+	channels it is in so this is somewhat non-deterministic as to when it will
+	be called.
+	"""
 	if 'username' not in userinfo or \
 		'hostname' not in userinfo:
 		return

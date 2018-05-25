@@ -35,6 +35,10 @@ from botlogger import logException
 
 
 def privmsg(self, user, channel, msg):
+	""" Listen for <nick>: ascii <word> and emit the contents of
+	<botdir>/ascii/<word>.txt back to the channel from whence the
+	message came.
+	"""
 	dst = user.split('!', 1)[0]
 	if channel != self.nickname:
 		msg = self._forMe(msg)
@@ -82,6 +86,9 @@ def privmsg(self, user, channel, msg):
 
 
 def ascii(what):
+	""" Given <word> that was parsed out of the message in privmsg()
+	read the file from disk and return the contents as a list..
+	"""
 	# The utterance regex above only matches these characters, but
 	# we'll double-check, Just In Case.
 	if not re.search(r'^[a-z0-9_.-]+$', what):

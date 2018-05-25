@@ -1,6 +1,6 @@
 """ topic.py (c) 2013 - 2018 Matthew J Ernisse <matt@going-flying.com>
 
-Take a custom BSD-style calendar(1) file and set a topic on all joined
+Take a directory of BSD-style calendar(1) files and set a topic on all joined
 channels from the notable events of the day.
 
 This tries to be polite, if the topic doesn't look like an event it won't
@@ -43,8 +43,7 @@ EVENTS = {}
 
 
 def load_alternate_rss(url):
-	''' Load an alternate source from an RSS feed '''
-
+	""" Load an alternate source from a given RSS feed """
 	try:
 		parsed = feedparser.parse(url)
 		topic = parsed['entries'][0].get('title', None)
@@ -80,7 +79,7 @@ def load_all_calendars():
 
 
 def load_calendar(fn):
-	''' load a bsd style calendar(1) file '''
+	""" load a bsd style calendar(1) file """
 	global EVENTS
 
 	try:
@@ -107,10 +106,9 @@ def load_calendar(fn):
 
 
 def emit_event(month, day):
-	''' return an event string, if nothing is in the calendar file for
-	today, emit a default string.
-
-	'''
+	""" return an event string, if nothing is in the calendar file for
+	today, try an RSS feed.  If that fails then emit a default string.
+	"""
 	global EVENTS
 	mmdd = "{}-{}".format(month, day)
 
@@ -130,12 +128,11 @@ def emit_event(month, day):
 
 
 def topicUpdated(self, user, channel, topic):
-	''' topicUpdated() gets called by the default irc_RPL_TOPIC()
-	so catch that.
+	""" topicUpdated() gets called by the default irc_RPL_TOPIC()
+	so catch that and change the topic if needed..
 
 	Be polite.
-
-	'''
+	"""
 	thismonth = time.strftime('%m')
 	thisday = time.strftime('%d')
 	event = emit_event(thismonth, thisday)
@@ -161,7 +158,9 @@ def topicUpdated(self, user, channel, topic):
 
 
 def periodic(self):
-	''' get all the topics for all the channels we are joined to. '''
+	""" Get all the topics for all the channels we are joined to.  This will
+	cause Bot() to fire topicUpdated() which will do the actual work.
+	"""
 	for channel in self.chatters:
 		self.topic(channel)
 

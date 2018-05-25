@@ -1,7 +1,9 @@
 """ hateball.py (c) 2013 - 2018 Matthew J. Ernisse <matt@going-flying.com>
 
 Module for irc bot that implements a magic hate ball-esque reply of last
-resort for directed speech to the bot.
+resort for directed speech to the bot.  This should be listed *last* in
+the "modules" section of config.json as it prevents any further callbacks
+in the list from running.
 
 Redistribution and use in source and binary forms,
 with or without modification, are permitted provided
@@ -38,6 +40,10 @@ FATES = ''
 
 
 def privmsg(self, user, channel, msg):
+	""" If anything makes it to this callback in the form of
+	<nick>: <ANYTHING> then reply with a random line of text from
+	fates.json.  No further callbacks will be processed after this.
+	"""
 	global FATES
 
 	msg = self._forMe(msg)

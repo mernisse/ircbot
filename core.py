@@ -49,6 +49,9 @@ MODULES = []
 
 
 class Configuration(object):
+	""" Parse and hold a JSON configuration while providing some convenience
+	accessors.
+	"""
 	def __init__(self, fileName=None):
 		self.config = {}
 		if fileName:
@@ -63,9 +66,9 @@ class Configuration(object):
 				src[k] = v
 
 	def load(self, fileName):
-		''' Load fileName.json and optionally fileName.private.json and
+		""" Load fileName.json and optionally fileName.private.json and
 		store the parsed object as Configuration.config.
-		'''
+		"""
 		if not os.path.exists(fileName):
 			return
 
@@ -122,12 +125,12 @@ class Configuration(object):
 
 
 class StopCallBacks(Exception):
-	''' Exception to stop processing callbacks '''
+	""" Signal to Bot() to stop processing callbacks in the stack."""
 	pass
 
 
 def load_modules(modules):
-	""" Import the requested modules """
+	""" Import the requested modules. """
 	for module in modules:
 		try:
 			importlib.import_module(module)

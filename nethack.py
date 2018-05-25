@@ -4,6 +4,17 @@ Module for the IRC robot that implements similar function to the Nethack
 witty sayings.
 
 Requires pom.py (ported from OpenBSD's pom.c) for Phase of Moon detection.
+In config.json you can set the following keys under "nethack":
+
+	"backoff" - How long between utterances.
+	"pom_min" - minimum % of the Phase of the Moon to activate
+	"pom_max" - maximum % of the Phase of the Moon to activate
+
+If the phase of the moon is between 100% and "pom_max", or
+between "pom_min" and 0% AND the bot has not emited a fortune cookie
+in "backoff" seconds it will select a random line out of nethack.nki
+and send it the channel that just had a message in it.  It will do this
+for every channel it is in.
 
 Redistribution and use in source and binary forms,
 with or without modification, are permitted provided
@@ -45,6 +56,7 @@ FORTUNES_TSTAMP = 0
 
 
 def load_fortunes():
+	""" load nethack.nki from disk."""
 	global FORTUNES, FORTUNES_TSTAMP
 
 	#
@@ -73,6 +85,7 @@ def load_fortunes():
 
 
 def privmsg(self, user, channel, msg):
+	""" See description in file header for explanation of this."""
 	msg = self._forMe(msg)
 	if not msg:
 		return False

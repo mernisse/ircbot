@@ -32,21 +32,25 @@ logger = None
 
 
 def debug(s):
+	""" Convenience function for logger.debug() """
 	global logger
 	logger.debug(s)
 
 
 def err(s):
+	""" Convenience function for logger.error() """
 	global logger
 	logger.error(s)
 
 
 def logException(e):
+	""" Convenience function for logger.error() with exc_info=e"""
 	global logger
 	logger.error("Exception: ", exc_info=e)
 
 
 def log(s):
+	""" Convenience function for logger.info() """
 	global logger
 	logger.info(s)
 

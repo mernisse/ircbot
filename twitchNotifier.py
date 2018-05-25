@@ -75,6 +75,7 @@ class Notification(object):
 		)
 
 	def dateStringToSecs(self, dateString):
+		""" Convert Twitch date/time strings to epoch seconds. """
 		# 2017-08-14T15:45:17Z
 		return time.mktime(
 			time.strptime(
@@ -92,6 +93,7 @@ class TwitchClient(object):
 		self.clientId = clientId
 
 	def getUserId(self, userName):
+		""" Resolve a Twitch Username to their userId. """
 		jsonStatus = self._fetch("users", {
 			"login": userName
 		})
@@ -102,6 +104,9 @@ class TwitchClient(object):
 		return jsonStatus["data"][0]["id"]
 
 	def getStreamingStatus(self, userId):
+		""" Query the Twitch New API for the live streams of the given
+		userIds.
+		"""
 		if not type(userId) == list:
 			userId = [userId]
 
@@ -137,6 +142,10 @@ class TwitchClient(object):
 
 
 def periodic(self):
+	""" Every CHECK_MINS iterate through STREAMS and see if we should
+	notify "twitch"/"users".  Uses Notification() to ensure we don't
+	emit a notification more than once per stream title/start time.
+	"""
 	global CHECK_MINS, STREAMS
 	now = time.time()
 	toCheck = []

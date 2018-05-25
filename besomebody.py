@@ -74,6 +74,10 @@ def quote_from_disk(who, index=None):
 
 
 def privmsg(self, user, channel, msg):
+	""" Look for <nick>: be <word> and dispatch <word> to the various
+	handlers.  If one of the handlers returns something then it will
+	be sent back to the channel.
+	"""
 	dst = user.split('!', 1)[0]
 	if channel != self.nickname:
 		msg = self._forMe(msg)
