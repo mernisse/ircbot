@@ -33,8 +33,6 @@ import sys
 import time
 import unittest
 
-sys.path.append("..")
-
 import topic
 import pom
 

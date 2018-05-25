@@ -34,10 +34,7 @@ import requests
 import sys
 import unittest
 
-sys.path.append("..")
-sys.path.append("../..")
-
-import handlers
+import uberurls.handlers as handlers
 
 
 def _getSoup(url):
