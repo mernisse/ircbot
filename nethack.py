@@ -16,6 +16,10 @@ in "backoff" seconds it will select a random line out of nethack.nki
 and send it the channel that just had a message in it.  It will do this
 for every channel it is in.
 
+This requires a file of sayings, they could be Nethack related or not.
+I got nethack.nki from:
+	https://www.crummy.com/software/robotfindskitten/
+
 Redistribution and use in source and binary forms,
 with or without modification, are permitted provided
 that the following conditions are met:
