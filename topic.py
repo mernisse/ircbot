@@ -62,7 +62,11 @@ def load_all_calendars():
 	""" Load all calendar files from a directory. """
 	global EVENTS
 
-	calPath = core.config.getChildren("topic").getStr("path")
+	try:
+		calPath = core.config.getChildren("topic").getStr("path")
+	except Exception:
+		return
+
 	if not os.path.exists(calPath):
 		return
 

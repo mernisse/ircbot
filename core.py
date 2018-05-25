@@ -50,6 +50,7 @@ MODULES = []
 
 class Configuration(object):
 	def __init__(self, fileName=None):
+		self.config = {}
 		if fileName:
 			self.load(fileName)
 
@@ -66,7 +67,7 @@ class Configuration(object):
 		store the parsed object as Configuration.config.
 		'''
 		if not os.path.exists(fileName):
-			raise ValueError("{} does not exist".format(fileName))
+			return
 
 		log("Loading {}".format(fileName))
 		with open(fileName) as fd:
