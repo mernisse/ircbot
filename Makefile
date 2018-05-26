@@ -1,6 +1,7 @@
 clean:
 	@echo CLEAN
-	@rm -r html latex
+	@rm -r html || true
+	@rm -r latex || true
 
 docs:
 	@doxygen Doxyfile
