@@ -276,6 +276,6 @@ dataDir = os.path.join(
 	os.path.abspath(os.path.dirname(sys.argv[0])),
 	"data"
 )
-print("Data dir: {}, Version: {}".format(dataDir, __version__))
+log("Data dir: {}, Version: {}".format(dataDir, __version__))
 register_module(__name__)
 load_modules(config.getList("modules"))
