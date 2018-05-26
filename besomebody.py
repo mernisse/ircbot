@@ -58,7 +58,7 @@ def quote_from_disk(who, index=None):
 	''' emit a quote from nicks/who.txt '''
 	sayings = []
 	try:
-		with open("nick/%s.txt" % (who)) as fd:
+		with open(os.path.join(core.dataDir, "nick/{}.txt".format(who))) as fd:
 			line = fd.readline()
 			if line:
 				sayings.append(line)

@@ -60,9 +60,19 @@ logger.setLevel(logging.DEBUG)
 
 consoleHandler = logging.StreamHandler()
 consoleHandler.setLevel(logging.DEBUG)
+consoleFormatter = logging.Formatter(
+	"%(asctime)s: %(message)s",
+	datefmt="%b %d %H:%M:%S"
+)
+consoleHandler.setFormatter(consoleFormatter)
 
 syslogHandler = logging.handlers.SysLogHandler("/dev/log")
 syslogHandler.setLevel(logging.INFO)
+syslogFormatter = logging.Formatter(
+	"%(asctime)s ircbot: %(message)s",
+	datefmt="%b %d %H:%M:%S"
+)
+syslogHandler.setFormatter(syslogFormatter)
 
 logger.addHandler(consoleHandler)
 logger.addHandler(syslogHandler)

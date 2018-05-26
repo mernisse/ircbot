@@ -208,7 +208,10 @@ class Bot(irc.IRCClient):
 		''' This is called every 5 minutes. '''
 		for mod in core.MODULES:
 			if getattr(sys.modules[mod], 'periodic', None):
-				sys.modules[mod].periodic(self)
+				try:
+					sys.modules[mod].periodic(self)
+				except Exception as e:
+					logException(e)
 
 	def privmsg(self, user, channel, msg):
 		''' Called when the bot sees a message in a channel or receives

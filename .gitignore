@@ -1,10 +1,13 @@
 *.pyc
 *.json
+TODO
 nethack.nki
 __pycache__/
 ascii/
 btsutils/
 calendars/
+data/*.*
 deadModules/
 html/
 nick/
+latex/

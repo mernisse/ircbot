@@ -62,7 +62,11 @@ def load_all_calendars():
 	global EVENTS
 
 	try:
-		calPath = core.config.getChildren("topic").getStr("path")
+		calPath = os.path.join(
+			core.dataDir,
+			core.config.getChildren("topic").getStr("path")
+		)
+
 	except Exception:
 		return
 

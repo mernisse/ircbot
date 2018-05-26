@@ -56,7 +56,7 @@ def privmsg(self, user, channel, msg):
 	if what == 'list':
 		try:
 			available = []
-			files = os.listdir('ascii/')
+			files = os.listdir(os.path.join(core.dataDir, 'ascii'))
 			for f in files:
 				if not f.endswith('.txt'):
 					continue
@@ -95,7 +95,7 @@ def ascii(what):
 		return "Nope, not gonna do it."
 
 	try:
-		fd = open("ascii/%s.txt" % (what))
+		fd = open(os.path.join(core.dataDir, "ascii/{}.txt".format(what)))
 	except:
 		return "I do not know of what you speak."
 

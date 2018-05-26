@@ -98,10 +98,16 @@ class TwitchClient(object):
 			"login": userName
 		})
 
-		if not jsonStatus["data"]:
+		if not jsonStatus.get("data", None):
 			raise ValueError("Username not found.")
 
-		return jsonStatus["data"][0]["id"]
+		try:
+			userId = jsonStatus["data"][0]["id"]
+		except Exception as e:
+			logException(e)
+			raise ValueError("API failure fetching {}".format(userName))
+
+		return userId
 
 	def getStreamingStatus(self, userId):
 		""" Query the Twitch New API for the live streams of the given
@@ -115,10 +121,10 @@ class TwitchClient(object):
 		})
 
 		if not jsonStatus:
-			return None
+			return []
 
-		if not jsonStatus["data"]:
-			return None
+		if not jsonStatus.get("data", None):
+			return []
 
 		return jsonStatus["data"]
 
@@ -132,10 +138,19 @@ class TwitchClient(object):
 			response = requests.get(
 				apiUrl,
 				headers=headers,
-				params=args
+				params=args,
+				timeout=0.3
 			)
 			response.raise_for_status()
 			return response.json()
+		except requests.exceptions.Timeout:
+			err("_fetch(): timeout connecting to {}".format(apiUrl))
+			return None
+
+		except requests.exceptions.ConnectionError:
+			err("_fetch(): failed to connect to {}".format(apiUrl))
+			return None
+
 		except Exception as e:
 			logException(e)
 			return None
@@ -154,43 +169,46 @@ def periodic(self):
 		if (now - twitchStream.lastChecked) < (CHECK_MINS * 60):
 			continue
 
-		toCheck.append(twitchStream.userId)
+		toCheck.append(twitchStream)
 		twitchStream.lastChecked = now
 
 	if not toCheck:
 		return
 
-	status = twitchClient.getStreamingStatus(toCheck)
-	if not status:
-		return
+	status = twitchClient.getStreamingStatus(
+		[x.userId for x in toCheck]
+	)
 
-	for twitchStream in status:
-		userId = twitchStream["user_id"]
-		title = twitchStream["title"]
-		started = twitchStream["started_at"]
+	for stream in toCheck:
+		for twitchStream in status:
+			if twitchStream["user_id"] != s.userId:
+				continue
 
-		stream = None
-		for s in STREAMS:
-			if s.userId == userId:
-				stream = s
+			newNotification = Notification(
+				stream.twitchUsername,
+				twitchStream["started_at"],
+				twitchStream["title"]
+			)
+
+			if stream.lastNotification == newNotification:
+				debug("skipping already sent notification.")
 				break
 
-		newNotification = Notification(
-			stream.twitchUsername,
-			started,
-			title
-		)
+			stream.lastNotification = newNotification
+			for user in config.getList("users"):
+				self.msg(user, "{} is streaming {}".format(
+					stream.twitchUsername,
+					twitchStream["title"]
+				))
+			break
 
-		if stream.lastNotification == newNotification:
-			debug("skipping already sent notification.")
-			continue
-
-		stream.lastNotification = newNotification
-		for user in config.getList("users"):
-			self.msg(user, "{} is streaming {}".format(
-				stream.twitchUsername,
-				title
-			))
+		else:
+			if stream.lastNotification:
+				stream.lastNotification = None
+				for user in config.getList("users"):
+					self.msg("{} has stopped streaming.".format(
+						stream.twitchUsername
+					))
 
 
 config = core.config.getChildren("twitch")

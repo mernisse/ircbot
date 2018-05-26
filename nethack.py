@@ -45,10 +45,11 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import core
-from os import stat
+import os
+import re
+
 from pom import pom
 from random import randint
-import re
 from stat import ST_MTIME
 from time import time
 
@@ -66,13 +67,13 @@ def load_fortunes():
 	#
 	# only reload fortunes if the file has changed since we loaded it.
 	#
-	tstamp = stat("nethack.nki")[ST_MTIME]
+	tstamp = os.stat(os.path.join(core.dataDir, "nethack.nki"))[ST_MTIME]
 	if tstamp < FORTUNES_TSTAMP:
 		return True
 
 	try:
 		new_fortunes = []
-		with open("nethack.nki") as fd:
+		with open(os.path.join(core.dataDir, "nethack.nki")) as fd:
 			for line in fd:
 				line = re.sub("#.*", "", line.strip())
 				if not line:

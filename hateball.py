@@ -30,6 +30,7 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import core
+import os
 import random
 import re
 import json
@@ -64,7 +65,7 @@ def privmsg(self, user, channel, msg):
 # Load fates at import
 #
 try:
-	with open('fates.json') as fd:
+	with open(os.path.join(core.dataDir, 'fates.json')) as fd:
 		for line in fd:
 			FATES = FATES + line.strip()
 
