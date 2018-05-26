@@ -55,6 +55,15 @@ def log(s):
 	logger.info(s)
 
 
+def setDebug(debug):
+	""" Set the loglevel to either Info or Debug """
+	global logger
+	if debug:
+		logger.setLevel(logging.DEBUG)
+	else:
+		logger.setLevel(logging.INFO)
+
+
 logger = logging.getLogger("ircbot")
 logger.setLevel(logging.DEBUG)
 

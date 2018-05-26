@@ -40,7 +40,7 @@ import os
 import re
 import subprocess
 import sys
-from botlogger import debug, err, log, logException
+from botlogger import debug, err, log, logException, setDebug
 from twisted.python.rebuild import rebuild
 
 __version__ = "2.0.0"
@@ -202,6 +202,7 @@ def privmsg(self, user, channel, msg):
 			else:
 				self.debug = True
 
+			setDebug(self.debug)
 			self.msg(
 				nick,
 				"Debug is now {}".format(self.debug),
