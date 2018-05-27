@@ -44,12 +44,28 @@ class ApiClient(object):
 		self.path = path
 		self.socket = socket
 		self.lastSeen = time.time()
+		log("New ApiClient(): {}".format(self.getRemoteAddr()))
 
 	def __repr__(self):
 		return "<ApiClient: {}, lastseen: {}>".format(
-			self.socket.remote_address,
+			self.getRemoteAddr(),
 			self.lastSeen
 		)
+
+	def getRemoteAddr(self):
+		""" Return the remote address of the connection taking potential
+		Proxy into account.
+		"""
+		if "X-Forwarded-For" in [
+			i[0]
+			for i in self.socket.raw_request_headers
+		]:
+			return [
+				i[1]
+				for i in self.socket.raw_request_headers
+				if i[0] == "X-Forwarded-For"][0]
+		else:
+			return self.socket.remote_address[0]
 
 	def touch(self):
 		''' Update the last seen time of the client. '''
@@ -133,10 +149,6 @@ class ApiServer(threading.Thread):
 			self.evt.call_soon_threadsafe(self.evt.stop)
 
 	async def _handle(self, socket, path):
-		log("ApiServer: new connection from {} to {}".format(
-			socket.remote_address[0],
-			path
-		))
 		client = ApiClient(socket, path)
 		self.clients.append(client)
 		while not self.shouldStop.is_set():
@@ -145,14 +157,14 @@ class ApiServer(threading.Thread):
 					await asyncio.wait_for(
 						client.socket.ping(),
 						timeout=2)
-					debug("PONG!")
 					client.touch()
+
 			except asyncio.TimeoutError:
 				log("ApiServer: Client {} timed out.".format(
 					socket.remote_address[0]
 				))
-				clients.socket.close()
-				clients.remove(client)
+				client.socket.close()
+				self.clients.remove(client)
 				return
 
 			try:
@@ -245,6 +257,7 @@ def connectionMade(bot):
 	apiServer.start()
 	log("api: thread started")
 
+
 def connectionLost(bot):
 	global apiServer
 	try:
@@ -255,6 +268,7 @@ def connectionLost(bot):
 
 	log("api: waiting for thread to stop.")
 	apiServer.join()
+
 
 def privmsg(self, user, channel, msg):
 	nick = user.split("!", 1)[0]
@@ -277,6 +291,7 @@ def privmsg(self, user, channel, msg):
 	}
 	apiServer.broadcast(_event)
 
+
 def userJoined(self, user, channel):
 	_event = {
 		"source": channel,
@@ -284,6 +299,7 @@ def userJoined(self, user, channel):
 		"type": "join"
 	}
 	apiServer.broadcast(_event)
+
 
 def userLeft(self, user, channel):
 	_event = {
