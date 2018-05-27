@@ -60,7 +60,7 @@ class Notification(object):
 		if not isinstance(other, self.__class__):
 			return False
 
-		if self.userId == other.userId and \
+		if self.twitchUserName == other.twitchUserName and \
 			self.streamName == other.streamName and \
 			self.started == other.started:
 			return True
@@ -98,7 +98,7 @@ class TwitchClient(object):
 			"login": userName
 		})
 
-		if not jsonStatus.get("data", None):
+		if not jsonStatus or not jsonStatus.get("data", None):
 			raise ValueError("Username not found.")
 
 		try:
@@ -143,6 +143,7 @@ class TwitchClient(object):
 			)
 			response.raise_for_status()
 			return response.json()
+
 		except requests.exceptions.Timeout:
 			err("_fetch(): timeout connecting to {}".format(apiUrl))
 			return None
@@ -181,7 +182,7 @@ def periodic(self):
 
 	for stream in toCheck:
 		for twitchStream in status:
-			if twitchStream["user_id"] != s.userId:
+			if twitchStream["user_id"] != stream.userId:
 				continue
 
 			newNotification = Notification(

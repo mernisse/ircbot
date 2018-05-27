@@ -107,12 +107,20 @@ class Bot(irc.IRCClient):
 		self.channels = self.factory.config.getList("channels")
 		log("connection established.")
 
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'connectionMade', None):
+				sys.modules[mod].connectionMade(self)
+
 	def connectionLost(self, reason):
 		log("Connection closed: {}".format(reason.getErrorMessage()))
 		try:
 			self.task.stop()
 		except Exception as e:
-			logException(e)
+			pass
+
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'connectionLost', None):
+				sys.modules[mod].connectionLost(self)
 
 	#
 	# Actions
