@@ -320,7 +320,7 @@ class Bot(irc.IRCClient):
 
 		for mod in core.MODULES:
 			if getattr(sys.modules[mod], 'userQuit', None):
-				sys.modules[mod].userQuit(self, user, channel)
+				sys.modules[mod].userQuit(self, user, message)
 
 	def userRenamed(self, oldname, newname):
 		''' Called when a user changes his/her nick. '''

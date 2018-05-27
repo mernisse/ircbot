@@ -277,6 +277,22 @@ def privmsg(self, user, channel, msg):
 	}
 	apiServer.broadcast(_event)
 
+def userJoined(self, user, channel):
+	_event = {
+		"source": channel,
+		"nick": user,
+		"type": "join"
+	}
+	apiServer.broadcast(_event)
+
+def userLeft(self, user, channel):
+	_event = {
+		"source": channel,
+		"nick": user,
+		"type": "part"
+	}
+	apiServer.broadcast(_event)
+
 
 apiServer = None
 core.register_module(__name__)

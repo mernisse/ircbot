@@ -1,0 +1,71 @@
+IRCBot WebSocket API
+
+Request Format:
+{
+	"request": String [required],
+	"target": String [depends on request],
+	"message": String [depends on request]
+}
+
+Response Format:
+{
+	"status": "ok" or "error",
+	"message": Object [depending on request]
+}
+
+
+Events:
+
+privmsg
+-------
+Upon reciept of either directed speech (nickname_of_bot: message) or a
+direct privmsg to the bot (/msg nickname_of_bot message) or any text
+to a monitored channel starting with a '!' the bot will emit an event
+in the following format.
+
+{
+	"source": [nick or channel],
+	"nick": [nick of sender],
+	"message": [the text of the message with the nickname: stripped],
+	"type": "privmsg"
+}
+
+For example a public message in #python to the bot with a name of marvin
+from user Ford_Prefect would generate
+
+{
+	"source": "#python",
+	"nick": "Ford_Prefect",
+	"message": "Where is my towel?",
+	"type": "privmsg"
+}
+
+A ! prefixed message will look like
+
+{
+	"source": "#python",
+	"nick": "Ford_Prefect",
+	"message": "!use Electronic Sub-Etha Auto Hitching Thumb",
+	"type": "privmsg"
+}
+
+A private message to the bot's nick will be
+{
+	"source": "Ford_Prefect",
+	"nick": "Ford_Prefect",
+	"message": "Hang on, Marvin.  We're coming to get you.",
+	"type": "privmsg"
+}
+
+
+joins/parts
+-----------
+When a user joins or parts the channel the following event will be sent.
+
+{
+	"source": [channel name],
+	"nick": [nick],
+	"type": "join" or "part"
+}
+
+
