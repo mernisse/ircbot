@@ -60,7 +60,7 @@ class Notification(object):
 		if not isinstance(other, self.__class__):
 			return False
 
-		if self.twitchUserName == other.twitchUserName and \
+		if self.twitchUsername == other.twitchUsername and \
 			self.streamName == other.streamName and \
 			self.started == other.started:
 			return True
