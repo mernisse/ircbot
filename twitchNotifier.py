@@ -207,7 +207,7 @@ def periodic(self):
 			if stream.lastNotification:
 				stream.lastNotification = None
 				for user in config.getList("users"):
-					self.msg("{} has stopped streaming.".format(
+					self.msg(user, "{} has stopped streaming.".format(
 						stream.twitchUsername
 					))
 
