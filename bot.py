@@ -56,9 +56,7 @@ class Bot(irc.IRCClient):
 	sourceURL = "https://github.com/mernisse/ircbot"
 	versionEnv = "Python"
 	versionName = "Marvin"
-	#
-	# Shims from Factory
-	#
+
 	@property
 	def nickname(self):
 		return self.factory.nickname
@@ -84,7 +82,6 @@ class Bot(irc.IRCClient):
 	@property
 	def versionNum(self):
 		return core.__version__
-
 
 	def _forMe(self, msg):
 		''' determine if a message was sent to me, if it was strip
@@ -325,7 +322,11 @@ class Bot(irc.IRCClient):
 	def userRenamed(self, oldname, newname):
 		''' Called when a user changes his/her nick. '''
 		for chan in self.chatters:
-			oldchatter = self.chatters[chan]['users'].pop(oldname)
+			try:
+				oldchatter = self.chatters[chan]['users'].pop(oldname)
+			except KeyError:
+				oldchatter = {}
+
 			self.chatters[chan]['users'][newname] = oldchatter
 
 		for mod in core.MODULES:

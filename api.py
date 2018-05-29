@@ -247,6 +247,17 @@ class ApiServer(threading.Thread):
 		await socket.send(json.dumps(_resp))
 
 
+def action(bot, user, channel, msg):
+	nick = user.split("!", 1)[0]
+	_event = {
+		"source": channel,
+		"nick": nick,
+		"message": msg,
+		"type": "action"
+	}
+	apiServer.broadcast(_event)
+
+
 def connectionMade(bot):
 	global apiServer
 	if apiServer:
@@ -273,21 +284,21 @@ def connectionLost(bot):
 def privmsg(self, user, channel, msg):
 	nick = user.split("!", 1)[0]
 	src = nick
+	eType = "privmsg"
 	if channel != self.nickname:
+		src = channel
 		_msg = self._forMe(msg)
 		if not _msg:
 			if not msg.startswith("!"):
-				return
+				eType = "pubmsg"
 		else:
 			msg = _msg
-
-		src = channel
 
 	_event = {
 		"source": src,
 		"nick": nick,
 		"message": msg,
-		"type": "privmsg"
+		"type": eType
 	}
 	apiServer.broadcast(_event)
 

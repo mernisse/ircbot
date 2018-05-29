@@ -41,10 +41,24 @@ STREAMS = []
 class Stream(object):
 	""" Hold state of a Twitch stream. """
 	def __init__(self, twitchUsername):
+		self._userId = ""
 		self.twitchUsername = twitchUsername
-		self.userId = twitchClient.getUserId(twitchUsername)
 		self.lastChecked = 0
 		self.lastNotification = None
+
+	@property
+	def userId(self):
+		""" Lazy load the userId property. """
+		if self._userId:
+			return self._userId
+		try:
+			self._userId = twitchClient.getUserId(twitchUsername)
+			return self._userId
+		except Exception as e:
+			err("Cannot resolve Twitch userId for {}".format(
+				self.twitchUsername
+			))
+			return None
 
 
 class Notification(object):
@@ -83,6 +97,10 @@ class Notification(object):
 				"%Y-%m-%dT%H:%M:%SZ"
 			)
 		)
+
+
+class TwitchAPIError(Exception):
+	pass
 
 
 class TwitchClient(object):
@@ -146,15 +164,15 @@ class TwitchClient(object):
 
 		except requests.exceptions.Timeout:
 			err("_fetch(): timeout connecting to {}".format(apiUrl))
-			return None
+			raise TwitchAPIError("Timeout")
 
 		except requests.exceptions.ConnectionError:
 			err("_fetch(): failed to connect to {}".format(apiUrl))
-			return None
+			raise TwitchAPIError("Connection failed")
 
 		except Exception as e:
 			logException(e)
-			return None
+			raise TwitchAPIError("General Error")
 
 
 def periodic(self):
@@ -176,9 +194,12 @@ def periodic(self):
 	if not toCheck:
 		return
 
-	status = twitchClient.getStreamingStatus(
-		[x.userId for x in toCheck]
-	)
+	try:
+		status = twitchClient.getStreamingStatus(
+			[x.userId for x in toCheck]
+		)
+	except TwitchAPIError:
+		return
 
 	for stream in toCheck:
 		for twitchStream in status:
