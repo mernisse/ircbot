@@ -35,7 +35,7 @@ import threading
 import time
 import websockets
 
-from botlogger import debug, err, log, logException
+from botlogger import err, log, logException
 
 
 class ApiClient(object):
@@ -94,7 +94,6 @@ class ApiServer(threading.Thread):
 	def broadcast(self, event):
 		""" Send a message to all connected clients."""
 		for client in self.clients:
-			debug("EVENT > {}".format(client.socket.remote_address[0]))
 			asyncio.ensure_future(
 				self._sendEvent(client.socket, event),
 				loop=self.evt
@@ -161,7 +160,7 @@ class ApiServer(threading.Thread):
 
 			except asyncio.TimeoutError:
 				log("ApiServer: Client {} timed out.".format(
-					socket.remote_address[0]
+					client.getRemoteAddr()
 				))
 				client.socket.close()
 				self.clients.remove(client)
@@ -209,7 +208,7 @@ class ApiServer(threading.Thread):
 
 			except websockets.exceptions.ConnectionClosed:
 				log("ApiServer: Client {} disconnected.".format(
-					socket.remote_address[0]
+					client.getRemoteAddr()
 				))
 				self.clients.remove(client)
 				return
@@ -224,7 +223,6 @@ class ApiServer(threading.Thread):
 				pass
 
 			except asyncio.futures.CancelledError:
-				debug("Task cancelled")
 				return
 
 			except Exception as e:
@@ -266,7 +264,6 @@ def connectionMade(bot):
 
 	apiServer = ApiServer(bot)
 	apiServer.start()
-	log("api: thread started")
 
 
 def connectionLost(bot):
@@ -277,7 +274,6 @@ def connectionLost(bot):
 		logException(e)
 		return
 
-	log("api: waiting for thread to stop.")
 	apiServer.join()
 
 
