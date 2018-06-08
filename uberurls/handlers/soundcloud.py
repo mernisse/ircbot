@@ -40,7 +40,11 @@ def load_title(url, soup):
 	if not re.search(r'soundcloud\.com', parsed_url.netloc, re.I):
 		return None
 
-	item = soup.find('h1', {'itemprop': 'name'})
+	try:
+		item = soup.find('h1', {'itemprop': 'name'})
+	except AttributeError:
+		return None
+
 	if not item:
 		return None
 

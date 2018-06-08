@@ -1,4 +1,5 @@
 bs4
+coverage
 feedparser
 twisted
 websockets

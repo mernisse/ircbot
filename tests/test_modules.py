@@ -66,6 +66,9 @@ class ConfigurationTests(unittest.TestCase):
 			bool(self._wholeConfig["ssl"])
 		)
 
+	def testConfigurationBoolDefault(self):
+		self.assertEqual(self.config.getBool("nonExistant"), None)
+
 	def testConfigurationChildren(self):
 		children = self.config.getChildren("module")
 		self.assertEqual(
@@ -73,11 +76,25 @@ class ConfigurationTests(unittest.TestCase):
 			self._wholeConfig["module"]
 		)
 
+	def testConfigirationChildrenThrows(self):
+		with self.assertRaises(KeyError):
+			self.config.getChildren("nonExistant")
+
 	def testConfigurationInt(self):
 		self.assertEqual(
 			self.config.getInt("port"),
 			int(self._wholeConfig["port"])
 		)
+
+	def testConfigurationIntDefault(self):
+		self.assertEqual(
+			self.config.getInt("nonExistant", 12345),
+			12345
+		)
+
+	def testConfigurationIntThrows(self):
+		with self.assertRaises(KeyError):
+			self.config.getInt("nonExistant")
 
 	def testConfigurationLoads(self):
 		self.assertEqual(self.config.config, self._wholeConfig)
@@ -248,7 +265,3 @@ class TwitchTests(unittest.TestCase):
 				stream.lastNotification,
 				twitchNotifier.Notification
 			))
-
-
-if __name__ == "__main__":
-	unittest.main()

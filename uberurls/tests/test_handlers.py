@@ -89,6 +89,16 @@ class SoundCloudHandlerTestCase(unittest.TestCase):
 		result = handlers.soundcloud.load_title(url, soup)
 		self.assertEqual(expected, result)
 
+	def testIgnoresNonSoundCloudUrls(self):
+		expected = "https://www.example.com/"
+		result = handlers.soundcloud.load_title(expected, None)
+		self.assertEqual(result, None)
+
+	def testHandlesInvalidSoup(self):
+		url = "https://soundcloud.com/huttonorbital/a-letter-to-alivn-defeer"
+		result = handlers.soundcloud.load_title(url, None)
+		self.assertEqual(result, None)
+
 
 class SpotifyHandlerTestCase(unittest.TestCase):
 	''' Module broken due to upstream changes. '''
@@ -103,6 +113,7 @@ class SpotifyHandlerTestCase(unittest.TestCase):
 
 	def testArtistUrl(self):
 		url = "https://open.spotify.com/artist/2UwJRAgSOi1zcLkvUNc8XL"
+
 
 
 class YoutubeHandlerTestCase(unittest.TestCase):
@@ -122,6 +133,11 @@ class YoutubeHandlerTestCase(unittest.TestCase):
 		expected = "https://youtube.com/watch?v=eJSa4reIYkU"
 		url = "http://www.youtube.com/watch?v=eJSa4reIYkU"
 		result = handlers.youtube.sanitize_url(url)
+		self.assertEqual(expected, result)
+
+	def testIgnoresNonYoutubeurls(self):
+		expected = "https://www.example.com/"
+		result = handlers.youtube.sanitize_url(expected)
 		self.assertEqual(expected, result)
 
 	def testTimeStampedUrl(self):
@@ -147,7 +163,3 @@ class YoutubeHandlerTestCase(unittest.TestCase):
 		url = "http://www.youtube.com/watch?v=eJSa4reIYkU&utm_source=random"
 		result = handlers.youtube.sanitize_url(url)
 		self.assertEqual(expected, result)
-
-
-if __name__ == "__main__":
-	unittest.main()

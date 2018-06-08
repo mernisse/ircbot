@@ -59,8 +59,4 @@ def sanitize_url(url):
 			parsed_url.path[1:],
 			canonical_qs)
 
-	else:
-		canonical_url = url
-		canonical_url = re.sub('^http:', 'https:', url)
-
 	return canonical_url

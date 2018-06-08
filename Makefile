@@ -1,5 +1,9 @@
 PYSRC := $(shell find . -path ./deadModules -prune -o -name \*.py)
 
+coverage:
+	@coverage run -m unittest discover .
+	@coverage html
+
 clean:
 	@echo CLEAN
 	@rm -r html || true
