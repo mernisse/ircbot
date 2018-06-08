@@ -35,6 +35,7 @@ import json
 import unittest
 
 import core
+import hateball
 import nethack
 import topic
 import twitchNotifier
@@ -60,8 +61,9 @@ class ConfigurationTests(unittest.TestCase):
 		},
 	}
 
-	def setUp(self):
-		self.config = core.Configuration("tests/test.json")
+	@classmethod
+	def setUpClass(cls):
+		cls.config = core.Configuration("tests/test.json")
 
 	def testConfigurationBool(self):
 		self.assertEqual(
@@ -113,6 +115,20 @@ class ConfigurationTests(unittest.TestCase):
 			self.config.getStr("password"),
 			self._wholeConfig["password"]
 		)
+
+
+class HateballTests(unittest.TestCase):
+	def setUp(self):
+		self.bot = utils.StubIrcRobot()
+
+	def testHateball(self):
+		hateball.privmsg(self.bot, "test", "#test", "testbotnick: test")
+		self.assertNotEqual(self.bot.messages, [])
+		self.assertTrue(self.bot.messages[0][2])
+
+	def testQuietIfNotMe(self):
+		hateball.privmsg(self.bot, "test", "#test", "test")
+		self.assertEqual(self.bot.messages, [])
 
 
 class NethackTests(unittest.TestCase):
@@ -200,7 +216,7 @@ class TopicTests(unittest.TestCase):
 
 class TwitchTests(unittest.TestCase):
 	def setUp(self):
-		self.stubIrcRobot = utils.StubIrcRobot()
+		self.bot = utils.StubIrcRobot()
 		twitchNotifier.config = utils.StubConfig()
 		twitchNotifier.twitchClient = utils.StubTwitchClient("")
 		twitchNotifier.STREAMS = [
@@ -209,22 +225,65 @@ class TwitchTests(unittest.TestCase):
 		]
 
 	def testTwitchUsersLive(self):
-		twitchNotifier.periodic(self.stubIrcRobot)
+		twitchNotifier.periodic(self.bot)
 		self.assertEqual(
-			self.stubIrcRobot.messages,
+			self.bot.messages,
 			[
 				("testclient", "test1 is streaming Test Stream"),
 				("testclient", "test2 is streaming Test Stream 2")
 			]
 		)
 
-	def testTwitchUsersNoDupeNotification(self):
-		twitchNotifier.periodic(self.stubIrcRobot)
-		self.stubIrcRobot.clear()
-		twitchNotifier.periodic(self.stubIrcRobot)
-		self.assertEqual(self.stubIrcRobot.messages, [])
+	def testTwitchUserNewStream(self):
+		_newStream = {
+			"id": "2",
+			"user_id": "1234567891",
+			"game_id": "458688",
+			"community_ids": [],
+			"type": "live",
+			"title": "Test Stream 3",
+			"viewer_count": 1,
+			"started_at": "2018-06-08T12:56:30Z",
+			"language": "en",
+			"thumbnail_url": "bar"
+		}
+		twitchNotifier.periodic(self.bot)
+		self.bot.clear()
+
+		twitchNotifier.twitchClient._getStreamingStatusReply["data"].pop()
+		twitchNotifier.twitchClient._getStreamingStatusReply["data"].append(_newStream)
 		for stream in twitchNotifier.STREAMS:
-			self.assertTrue(isinstance(
+			stream.lastChecked = 0
+
+		twitchNotifier.periodic(self.bot)
+		self.assertEqual(
+			self.bot.messages,
+			[("testclient", "test2 is streaming Test Stream 3")]
+		)
+
+	def testTwitchUsersNoDupeNotification(self):
+		twitchNotifier.periodic(self.bot)
+		for stream in twitchNotifier.STREAMS:
+			self.assertIsInstance(
 				stream.lastNotification,
 				twitchNotifier.Notification
-			))
+			)
+			stream.lastChecked = 0
+
+		self.bot.clear()
+		twitchNotifier.periodic(self.bot)
+		self.assertEqual(self.bot.messages, [])
+
+	def testTwitchUsersStopNotification(self):
+		twitchNotifier.periodic(self.bot)
+		self.bot.clear()
+
+		twitchNotifier.twitchClient._getStreamingStatusReply["data"].pop()
+		for stream in twitchNotifier.STREAMS:
+			stream.lastChecked = 0
+
+		twitchNotifier.periodic(self.bot)
+		self.assertEqual(
+			self.bot.messages,
+			[("testclient", "test2 has stopped streaming.")]
+		)

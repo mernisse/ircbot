@@ -30,7 +30,6 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
 import bot
-import json
 
 
 class StubConfig(object):
@@ -50,40 +49,38 @@ class StubConfig(object):
 
 class StubTwitchClient(object):
 	""" Override for the twitch client class"""
-	_getStreamingStatusReply = '''{
-		"data":[
-			{
-				"id":"0",
-				"user_id":"1234567890",
-				"game_id":"458688",
-				"community_ids":[],
-				"type":"live",
-				"title":"Test Stream",
-				"viewer_count":1,
-				"started_at":"2018-06-08T12:56:28Z",
-				"language":"en",
-				"thumbnail_url":"foo"
-			},
-			{
-				"id":"1",
-				"user_id":"1234567891",
-				"game_id":"458688",
-				"community_ids":[],
-				"type":"live",
-				"title":"Test Stream 2",
-				"viewer_count":1,
-				"started_at":"2018-06-08T12:56:28Z",
-				"language":"en",
-				"thumbnail_url":"bar"
-			}
-		],
-		"pagination":{
-			"cursor":""
-		}
-	}'''
-
 	def __init__(self, clientId):
-		pass
+		self._getStreamingStatusReply = {
+			"data": [
+				{
+					"id": "0",
+					"user_id": "1234567890",
+					"game_id": "458688",
+					"community_ids": [],
+					"type": "live",
+					"title": "Test Stream",
+					"viewer_count": 1,
+					"started_at": "2018-06-08T12:56:28Z",
+					"language": "en",
+					"thumbnail_url": "foo"
+				},
+				{
+					"id": "1",
+					"user_id": "1234567891",
+					"game_id": "458688",
+					"community_ids": [],
+					"type": "live",
+					"title": "Test Stream 2",
+					"viewer_count": 1,
+					"started_at": "2018-06-08T12:56:28Z",
+					"language": "en",
+					"thumbnail_url": "bar"
+				}
+			],
+			"pagination": {
+				"cursor": ""
+			}
+		}
 
 	def getUserId(self, userName):
 		if userName == "test1":
@@ -99,7 +96,7 @@ class StubTwitchClient(object):
 			raise ValueError("unknown username specified")
 
 	def getStreamingStatus(self, userId):
-		return json.loads(self._getStreamingStatusReply)["data"]
+		return self._getStreamingStatusReply["data"]
 
 class StubIrcRobot(object):
 	""" Stub class for the IRCBot. """
@@ -115,8 +112,11 @@ class StubIrcRobot(object):
 		""" Clear messages list """
 		self.messages = []
 
-	def msg(self, user, message):
-		self.messages.append((user, message))
+	def msg(self, user, message, only=None):
+		if only:
+			self.messages.append((user, message, only))
+		else:
+			self.messages.append((user, message))
 
 	def topic(self, channel, event):
 		self.topicResult = (channel, event)
