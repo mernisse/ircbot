@@ -1,4 +1,4 @@
-PYSRC := $(shell find . -path ./deadModules -prune -o -name \*.py)
+PYSRC := $(shell find . -path ./deadModules -prune -o -name \*.py -print )
 
 coverage:
 	@coverage run -m unittest discover .
@@ -13,9 +13,14 @@ docs:
 	@doxygen Doxyfile
 
 lint: $(PYSRC)
-	@printf "FLAKE8 $<\n"
-	@flake8 --ignore=W191,E101,F401 $< || true
+
+$(PYSRC):
+	@printf "FLAKE8 $@\n"
+	@printf "===============\n"
+	@flake8 --ignore=W191,E101,F401 $@ || true
 	@printf "\n"
 
 test:
 	@python3 -m unittest discover .
+
+.PHONY: lint $(PYSRC)
