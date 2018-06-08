@@ -35,10 +35,13 @@ import json
 import unittest
 
 import core
+import nethack
 import topic
 import twitchNotifier
 import pom
 
+sys.path.append("tests")
+import utils
 
 class ConfigurationTests(unittest.TestCase):
 	_wholeConfig = {
@@ -112,6 +115,47 @@ class ConfigurationTests(unittest.TestCase):
 		)
 
 
+class NethackTests(unittest.TestCase):
+	def setUp(self):
+		self.bot = utils.StubIrcRobot()
+		self.pom1 = lambda: 1 
+		self.pom50 = lambda: 50
+		self.pom100 = lambda: 100
+
+		nethack.NH_FIRED = {}
+		nethack.config = utils.StubConfig()
+
+	def testFullMoon(self):
+		nethack.pom = self.pom100
+		nethack.privmsg(self.bot, "test", "#test", "testbotnick: test message")
+		self.assertNotEqual(self.bot.messages, [])
+
+	def testNewMoon(self):
+		nethack.pom = self.pom1
+		nethack.privmsg(self.bot, "test", "#test", "testbotnick: test message")
+		self.assertNotEqual(self.bot.messages, [])
+
+	def testNotDirectedIsQuiet(self):
+		nethack.pom = self.pom100
+		nethack.privmsg(self.bot, "testuser", "#testchannel", "test message")
+		self.assertEqual(self.bot.messages, [])
+
+	def testOtherMoonQuiet(self):
+		nethack.pom = self.pom50
+		nethack.privmsg(self.bot, "test", "#test", "testbotnick: test message")
+		self.assertEqual(self.bot.messages, [])
+
+	def testTooFastIsQuiet(self):
+		nethack.config.config["backoff"] = 999999999
+		nethack.pom = self.pom100
+		nethack.privmsg(self.bot, "test", "#test", "testbotnick: test message")
+		self.assertNotEqual(self.bot.messages, [])
+
+		self.bot.clear()
+		nethack.privmsg(self.bot, "test", "#test", "testbotnick: test message")
+		self.assertEqual(self.bot.messages, [])
+
+
 class PomTests(unittest.TestCase):
 	def testKnownFullMoon(self):
 		# May 30 2018 00:00 GMT
@@ -127,13 +171,6 @@ class PomTests(unittest.TestCase):
 
 
 class TopicTests(unittest.TestCase):
-	class TopicCatcher(object):
-		""" Stub class for the topic methods. """
-		result = ""
-
-		def topic(self, channel, event):
-			self.result = (channel, event)
-
 	def setUp(self):
 		self.thisMonth = time.strftime("%m")
 		self.thisDay = time.strftime("%d")
@@ -141,105 +178,31 @@ class TopicTests(unittest.TestCase):
 		topic.EVENTS = {self.mmddKey: ["Test Data."]}
 
 	def testTopicUpdaterNoTopic(self):
-		testSelf = self.TopicCatcher()
+		testSelf = utils.StubIrcRobot()
 		topic.topicUpdated(testSelf, "", "#test", "")
 
 		self.assertEqual(
-			testSelf.result[1],
+			testSelf.topicResult[1],
 			"{}/{} Test Data.".format(self.thisMonth, self.thisDay)
 		)
 
 		self.assertEqual(
-			testSelf.result[0],
+			testSelf.topicResult[0],
 			"#test"
 		)
 
 	def testTopicNotUpdatedIfSet(self):
 		currTopic = "This is an already set topic."
-		testSelf = self.TopicCatcher()
+		testSelf = utils.StubIrcRobot()
 		topic.topicUpdated(testSelf, "", "#test", currTopic)
-		self.assertEqual(testSelf.result, "")
+		self.assertEqual(testSelf.topicResult, "")
 
 
 class TwitchTests(unittest.TestCase):
-	class StubConfig(object):
-		""" Stub out the configuration object."""
-		config = {
-			"users": ["testclient"],
-		}
-
-		def getList(self, key):
-			return self.config[key]
-
-	class StubTwitchClient(object):
-		""" Override for the twitch client class"""
-		_getStreamingStatusReply = '''{
-			"data":[
-				{
-					"id":"0",
-					"user_id":"1234567890",
-					"game_id":"458688",
-					"community_ids":[],
-					"type":"live",
-					"title":"Test Stream",
-					"viewer_count":1,
-					"started_at":"2018-06-08T12:56:28Z",
-					"language":"en",
-					"thumbnail_url":"foo"
-				},
-				{
-					"id":"1",
-					"user_id":"1234567891",
-					"game_id":"458688",
-					"community_ids":[],
-					"type":"live",
-					"title":"Test Stream 2",
-					"viewer_count":1,
-					"started_at":"2018-06-08T12:56:28Z",
-					"language":"en",
-					"thumbnail_url":"bar"
-				}
-			],
-			"pagination":{
-				"cursor":""
-			}
-		}'''
-
-		def __init__(self, clientId):
-			pass
-
-		def getUserId(self, userName):
-			if userName == "test1":
-				return "1234567890"
-
-			elif userName == "test2":
-				return "1234567891"
-
-			elif userName == "testThrows":
-				raise ValueError("Requested Exception")
-
-			else:
-				raise ValueError("unknown username specified")
-
-		def getStreamingStatus(self, userId):
-			return json.loads(self._getStreamingStatusReply)["data"]
-
-	class StubIrcRobot(object):
-		""" Stub class to get msg calls from the notifier plugin"""
-		def __init__(self):
-			self.messages = []
-
-		def clear(self):
-			""" Clear messages list """
-			self.messages = []
-
-		def msg(self, user, message):
-			self.messages.append((user, message))
-
 	def setUp(self):
-		self.stubIrcRobot = self.StubIrcRobot()
-		twitchNotifier.config = self.StubConfig()
-		twitchNotifier.twitchClient = self.StubTwitchClient("")
+		self.stubIrcRobot = utils.StubIrcRobot()
+		twitchNotifier.config = utils.StubConfig()
+		twitchNotifier.twitchClient = utils.StubTwitchClient("")
 		twitchNotifier.STREAMS = [
 			twitchNotifier.Stream("test1"),
 			twitchNotifier.Stream("test2")

@@ -6,6 +6,8 @@ coverage:
 
 clean:
 	@echo CLEAN
+	@rm .coverage || true
+	@rm -r htmlcov || true
 	@rm -r html || true
 	@rm -r latex || true
 
