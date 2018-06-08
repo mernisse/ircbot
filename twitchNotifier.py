@@ -52,7 +52,7 @@ class Stream(object):
 		if self._userId:
 			return self._userId
 		try:
-			self._userId = twitchClient.getUserId(twitchUsername)
+			self._userId = twitchClient.getUserId(self.twitchUsername)
 			return self._userId
 		except Exception as e:
 			err("Cannot resolve Twitch userId for {}".format(

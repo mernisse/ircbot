@@ -16,6 +16,27 @@ Response Format:
 
 Events:
 
+actions
+-------
+Any actions (/me does something) will be sent in the following format:
+
+{
+	"source": [channel],
+	"nick": [nick of sender],
+	"message": [the text of the action as sent],
+	"type": "action"
+}
+
+As an example if Ford_Prefect in #python types "/me yawns" into their
+IRC client, the resultant message sent by the bot would be:
+
+{
+	"source": "#python",
+	"nick": "Ford_Prefect",
+	"message": "yawns",
+	"type": "action"
+}
+
 privmsg
 -------
 Upon reciept of either directed speech (nickname_of_bot: message) or a
@@ -31,7 +52,7 @@ in the following format.
 }
 
 For example a public message in #python to the bot with a name of marvin
-from user Ford_Prefect would generate
+from user Ford_Prefect would generate (eg: marvin: Where is my towel?)
 
 {
 	"source": "#python",
@@ -57,6 +78,18 @@ A private message to the bot's nick will be
 	"type": "privmsg"
 }
 
+pubmsg
+-------
+Any other speech in a channel that is not from the bot or detected as
+a privmsg (as described above) will be emitted as a pubmsg in the following
+format.
+
+{
+	"source": [channel],
+	"nick": [nick of sender],
+	"message": [the text of the message],
+	"type": "pubmsg"
+}
 
 joins/parts
 -----------
