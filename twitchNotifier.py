@@ -31,7 +31,7 @@ import core
 import requests
 import time
 import urllib.parse
-from botlogger import debug, err, log, logException
+from botlogger import err, log, logException
 
 CHECK_MINS = 15
 LAST_CHECK = 0
@@ -213,7 +213,6 @@ def periodic(self):
 			)
 
 			if stream.lastNotification == newNotification:
-				debug("skipping already sent notification.")
 				break
 
 			stream.lastNotification = newNotification
