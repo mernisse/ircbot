@@ -85,5 +85,5 @@ class AsciiTests(unittest.TestCase):
 			)
 		self.assertEqual(
 			self.bot.messages,
-			 [("#test", "I do not know of what you speak.")]
+			[("#test", "I do not know of what you speak.")]
 		)

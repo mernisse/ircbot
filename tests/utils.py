@@ -47,6 +47,7 @@ class StubConfig(object):
 	def getList(self, key):
 		return self.config[key]
 
+
 class StubTwitchClient(object):
 	""" Override for the twitch client class"""
 	def __init__(self, clientId):
@@ -98,9 +99,12 @@ class StubTwitchClient(object):
 	def getStreamingStatus(self, userId):
 		return self._getStreamingStatusReply["data"]
 
+
 class StubIrcRobot(object):
 	""" Stub class for the IRCBot. """
+	chatters = {"#test": {}}
 	nickname = "testbotnick"
+
 	def __init__(self):
 		self.messages = []
 		self.topicResult = ""
@@ -118,5 +122,6 @@ class StubIrcRobot(object):
 		else:
 			self.messages.append((user, message))
 
-	def topic(self, channel, event):
-		self.topicResult = (channel, event)
+	def topic(self, channel, event=None):
+		if event:
+			self.topicResult = (channel, event)

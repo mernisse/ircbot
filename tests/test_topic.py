@@ -41,27 +41,55 @@ import utils
 
 class TopicTests(unittest.TestCase):
 	def setUp(self):
+		self.bot = utils.StubIrcRobot()
 		self.thisMonth = time.strftime("%m")
 		self.thisDay = time.strftime("%d")
 		self.mmddKey = "{}-{}".format(self.thisMonth, self.thisDay)
 		topic.EVENTS = {self.mmddKey: ["Test Data."]}
 
-	def testTopicUpdaterNoTopic(self):
-		testSelf = utils.StubIrcRobot()
-		topic.topicUpdated(testSelf, "", "#test", "")
+	def testTopicChanges(self):
+		currTopic = "00/00 This is an old topic."
+		topic.topicUpdated(self.bot, "", "#test", currTopic)
 
 		self.assertEqual(
-			testSelf.topicResult[1],
+			self.bot.topicResult[1],
 			"{}/{} Test Data.".format(self.thisMonth, self.thisDay)
 		)
 
 		self.assertEqual(
-			testSelf.topicResult[0],
+			self.bot.topicResult[0],
 			"#test"
 		)
 
 	def testTopicNotUpdatedIfSet(self):
 		currTopic = "This is an already set topic."
-		testSelf = utils.StubIrcRobot()
-		topic.topicUpdated(testSelf, "", "#test", currTopic)
-		self.assertEqual(testSelf.topicResult, "")
+		topic.topicUpdated(self.bot, "", "#test", currTopic)
+		self.assertEqual(self.bot.topicResult, "")
+
+	def testTopicNotUpdatedIfToday(self):
+		currTopic = "{}/{} Test Data.".format(self.thisMonth, self.thisDay)
+		topic.topicUpdated(self.bot, "", "#test", currTopic)
+		self.assertEqual(self.bot.topicResult, "")
+
+	def testTopicUpdatesIfNoTopic(self):
+		topic.topicUpdated(self.bot, "", "#test", "")
+
+		self.assertEqual(
+			self.bot.topicResult[1],
+			"{}/{} Test Data.".format(self.thisMonth, self.thisDay)
+		)
+
+		self.assertEqual(
+			self.bot.topicResult[0],
+			"#test"
+		)
+
+	def testTopicTriesRss(self):
+		expected = ("#test", "{}/{} Nothing ever happens.".format(
+			self.thisMonth,
+			self.thisDay
+		))
+		topic.EVENTS = {}
+		topic.load_alternate_rss = lambda x: None
+		topic.topicUpdated(self.bot, "", "#test", "")
+		self.assertEqual(self.bot.topicResult, expected)

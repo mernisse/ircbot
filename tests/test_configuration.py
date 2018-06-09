@@ -37,6 +37,7 @@ import core
 sys.path.append("tests")
 import utils
 
+
 class ConfigurationTests(unittest.TestCase):
 	_wholeConfig = {
 		"ssl": "true",
