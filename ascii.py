@@ -89,18 +89,16 @@ def ascii(what):
 	""" Given <word> that was parsed out of the message in privmsg()
 	read the file from disk and return the contents as a list..
 	"""
-	# The utterance regex above only matches these characters, but
-	# we'll double-check, Just In Case.
-	if not re.search(r'^[a-z0-9_.-]+$', what):
-		return "Nope, not gonna do it."
-
 	try:
-		fd = open(os.path.join(core.dataDir, "ascii/{}.txt".format(what)))
+		with open(os.path.join(
+			core.dataDir,
+			"ascii/{}.txt".format(what))
+		) as fd:
+			art = fd.readlines()
+
 	except:
 		return "I do not know of what you speak."
 
-	art = fd.readlines()
-	fd.close()
 	return art
 
 
