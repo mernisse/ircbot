@@ -124,10 +124,11 @@ class Bot(irc.IRCClient):
 	#
 	def names(self, channel):
 		''' Get a userlist for the channel, on reply namesReply() will
-		be called.
+		be called.  Can be disabled (eg: for twitch irc).
 		'''
-		channel = channel.lower()
-		self.sendLine("NAMES %s" % channel)
+		if not self.factory.config.getBool("namesNotSupported"):
+			channel = channel.lower()
+			self.sendLine("NAMES %s" % channel)
 
 	def msg(self, user, message, length=None, only=None):
 		''' Overload irc.IRCClient.msg() so that we can break out of
