@@ -253,6 +253,13 @@ class Bot(irc.IRCClient):
 		#
 		core.nickname = self.nickname
 
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'signedOn', None):
+				try:
+					sys.modules[mod].signedOn(self)
+				except Exception as e:
+					logException(e)
+
 		for chan in self.channels:
 			self.join(chan)
 
@@ -435,7 +442,7 @@ class Bot(irc.IRCClient):
 				prefix, command, params))
 
 
-class BotFactory(protocol.ClientFactory):
+class BotFactory(protocol.ReconnectingClientFactory):
 	protocol = Bot
 
 	def __init__(self, config):
@@ -445,7 +452,7 @@ class BotFactory(protocol.ClientFactory):
 		self.realname = config.getStr("realname")
 
 	def clientConnectionLost(self, connector, reason):
-		pass
+		super().clientConnectionLost(connector, reason)
 
 	def clientConnectionFailed(self, connector, reason):
-		pass
+		super().clientConnectionFailed(connector, reason)
