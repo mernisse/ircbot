@@ -1,4 +1,4 @@
-""" twitchChatExtensions.py 
+""" twitchChatExtensions.py
 (c) 2018 Matthew J. Ernisse <matt@going-flying.com>
 All Rights Reserved.
 
