@@ -32,10 +32,68 @@ import core
 from botlogger import debug, err, log, logException
 
 
+def parseTags(tags):
+	""" Parse the tag format and return a dict containing the key/value
+	pairs contained within..
+
+	https://ircv3.net/specs/core/message-tags-3.2.html
+	"""
+	if not tags.startswith("@"):
+		return {}
+
+	tagDict = {}
+	tagList = tags[1:].split(";")
+	for tag in tagList:
+		k, v = tag.split("=")
+		tagDict[k] = v
+
+	return tagDict
+
 def signedOn(self):
 	log("twitchChatExtensions: requesting extra capabilities.")
+	self.sendLine("CAP REQ :twitch.tv/commands")
 	self.sendLine("CAP REQ :twitch.tv/membership")
 	self.sendLine("CAP REQ :twitch.tv/tags")
 
+def unknown(self, prefix, command, params):
+	""" Handle twitch CAP tags and re-inject them into the bot to be handled
+	as regular IRC events...
+
+	https://dev.twitch.tv/docs/irc/tags/
+	"""
+	if not command.startswith("@"):
+		return
+
+	try:
+		paramList = params[0].split(maxsplit=3)
+		tags = parseTags(command)
+	except Exception as e:
+		logException(e)
+		return
+
+	if len(paramList) == 2:
+		# Looks like GLOBALUSERSTATE is only 2
+		usermask, command = paramList
+		return
+
+	if len(paramList) == 3:
+		usermask, command, target = paramList
+		# ROOMSTATE and USERSTATE commands are 3...
+		return
+
+	elif len(paramList) == 4:
+		# ACTION, CLEARCHAT, and PRIVMSG, USERNOTICE
+		usermask, command, target, message = paramList
+		message = message[1:]
+		if message.startswith("\x01ACTION"):
+			# ':\x01ACTION dances\x01'
+			message = message[8:-1]
+			self.action(usermask, target, message)
+
+		elif command == "PRIVMSG":
+			self.privmsg(usermask, target, message, tags)
+
+		else:
+			log("unknown twitch command received: {}".format(paramList))
 
 core.MODULES.append(__name__)

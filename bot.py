@@ -219,16 +219,27 @@ class Bot(irc.IRCClient):
 				except Exception as e:
 					logException(e)
 
-	def privmsg(self, user, channel, msg):
+	def privmsg(self, user, channel, msg, tags=None):
 		''' Called when the bot sees a message in a channel or receives
-		a query.
+		a query.  If tags are given then it will try to pass them to
+		a module function called privmsgWithTags.  If that function doesn't
+		exist it will fallback to privmsg and the tags will be dropped.
+		Tags should be a dict.
 
 		Bot control actions should go into the privmsg callback in
 		core.py.
 		'''
 		try:
 			for mod in core.MODULES:
-				if getattr(sys.modules[mod], 'privmsg', None):
+				if getattr(sys.modules[mod], 'privmsgWithTags', None):
+					sys.modules[mod].privmsgWithTags(
+						self,
+						user,
+						channel,
+						msg,
+						tags
+					)
+				elif getattr(sys.modules[mod], 'privmsg', None):
 					sys.modules[mod].privmsg(self, user, channel, msg)
 
 		except core.StopCallBacks:
@@ -441,6 +452,13 @@ class Bot(irc.IRCClient):
 		if self.debug:
 			log('UNKN: prefix=%s, command=%s, params=%s' % (
 				prefix, command, params))
+
+		for mod in core.MODULES:
+			if getattr(sys.modules[mod], 'unknown', None):
+				try:
+					sys.modules[mod].unknown(self, prefix, command, params)
+				except Exception as e:
+					logException(e)
 
 
 class BotFactory(protocol.ReconnectingClientFactory):

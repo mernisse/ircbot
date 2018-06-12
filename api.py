@@ -281,7 +281,7 @@ def connectionLost(bot):
 	apiServer.join()
 
 
-def privmsg(self, user, channel, msg):
+def privmsgWithTags(self, user, channel, msg, tags):
 	nick = user.split("!", 1)[0]
 	src = nick
 	eType = "privmsg"
@@ -298,6 +298,7 @@ def privmsg(self, user, channel, msg):
 		"source": src,
 		"nick": nick,
 		"message": msg,
+		"tags": tags,
 		"type": eType
 	}
 	apiServer.broadcast(_event)
