@@ -55,6 +55,7 @@ class Configuration(object):
 	def __init__(self, fileName=None):
 		self.config = {}
 		if fileName:
+			self.fileName = fileName
 			self.load(fileName)
 
 	def _combine(self, src, tgt):
@@ -72,6 +73,7 @@ class Configuration(object):
 		if not os.path.exists(fileName):
 			return
 
+		self.fileName = fileName
 		log("Loading {}".format(fileName))
 		with open(fileName) as fd:
 			obj = json.load(fd)
@@ -86,6 +88,11 @@ class Configuration(object):
 				obj = json.load(fd)
 
 			self._combine(self.config, obj)
+
+	def rehash(self):
+		""" Reload the configuration from disk. """
+		self.load(self.fileName)
+		log("Reloading configuration.")
 
 	def getBool(self, key):
 		""" Returns key as a bool, returns None if it does not exist. """

@@ -203,6 +203,10 @@ class ApiServer(threading.Thread):
 					self.bot.msg(target, message)
 					await self._sendMessage(socket, "done")
 
+				elif _msg.get("request") == "reloadConfig":
+					self.bot.factory.config.rehash()
+					await self._sendMessage(socket, "done")
+
 				else:
 					await self._sendError(socket, "invalid request")
 

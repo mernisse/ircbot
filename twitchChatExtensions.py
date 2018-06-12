@@ -35,6 +35,7 @@ from botlogger import debug, err, log, logException
 def signedOn(self):
 	log("twitchChatExtensions: requesting extra capabilities.")
 	self.sendLine("CAP REQ :twitch.tv/membership")
+	self.sendLine("CAP REQ :twitch.tv/tags")
 
 
 core.MODULES.append(__name__)
