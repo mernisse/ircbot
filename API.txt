@@ -101,4 +101,17 @@ When a user joins or parts the channel the following event will be sent.
 	"type": "join" or "part"
 }
 
+Requests:
+---------
 
+listChannels:
+	List the channels the bot is joined to.
+
+listModules:
+	List the loaded modules.
+
+listUsers <target:channel>:
+	List the users in the channel.
+
+reloadConfig:
+	Reloads the config.json and updates the global Configuration instance.
