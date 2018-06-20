@@ -32,8 +32,8 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import sys
 import unittest
 
-import twitchApi
 import twitchNotifier
+from twitchApi import Stream
 
 sys.path.append("tests")
 import utils
@@ -42,22 +42,22 @@ import utils
 class TwitchTests(unittest.TestCase):
 	def setUp(self):
 		self.bot = utils.StubIrcRobot()
+		self.twitchClient = utils.StubTwitchClient("")
+
 		twitchNotifier.config = utils.StubConfig()
-		twitchClient = utils.StubTwitchClient("")
-		twitchNotifier.twitchClient = twitchClient
 		twitchNotifier.STREAMS = [
-			twitchApi.Stream(twitchClient, "test1"),
-			twitchApi.Stream(twitchClient, "test2")
+			Stream(self.twitchClient, "test1", 0),
+			Stream(self.twitchClient, "test2", 0)
 		]
 
 	def testTwitchUsersLive(self):
 		twitchNotifier.periodic(self.bot)
 		self.assertEqual(
-			self.bot.messages,
 			[
 				("testclient", "test1 is streaming Test Stream"),
 				("testclient", "test2 is streaming Test Stream 2")
-			]
+			],
+			self.bot.messages
 		)
 
 	def testTwitchUserNewStream(self):
@@ -75,16 +75,13 @@ class TwitchTests(unittest.TestCase):
 		}
 		twitchNotifier.periodic(self.bot)
 		self.bot.clear()
-
-		twitchNotifier.twitchClient._getStreamingStatusReply["data"].pop()
-		twitchNotifier.twitchClient._getStreamingStatusReply["data"].append(_newStream)
-		for stream in twitchNotifier.STREAMS:
-			stream.lastChecked = 0
+		self.twitchClient._getStreamingStatusReply["data"].pop()
+		self.twitchClient._getStreamingStatusReply["data"].append(_newStream)
 
 		twitchNotifier.periodic(self.bot)
 		self.assertEqual(
-			self.bot.messages,
-			[("testclient", "test2 is streaming Test Stream 3")]
+			[("testclient", "test2 is streaming Test Stream 3")],
+			self.bot.messages
 		)
 
 	def testTwitchUsersNoDupeNotification(self):
@@ -94,22 +91,18 @@ class TwitchTests(unittest.TestCase):
 				stream.lastNotification,
 				twitchNotifier.Notification
 			)
-			stream.lastChecked = 0
 
 		self.bot.clear()
 		twitchNotifier.periodic(self.bot)
-		self.assertEqual(self.bot.messages, [])
+		self.assertEqual([], self.bot.messages)
 
 	def testTwitchUsersStopNotification(self):
 		twitchNotifier.periodic(self.bot)
 		self.bot.clear()
-
-		twitchNotifier.twitchClient._getStreamingStatusReply["data"].pop()
-		for stream in twitchNotifier.STREAMS:
-			stream.lastChecked = 0
+		self.twitchClient._getStreamingStatusReply["data"].pop()
 
 		twitchNotifier.periodic(self.bot)
 		self.assertEqual(
-			self.bot.messages,
-			[("testclient", "test2 has stopped streaming.")]
+			[("testclient", "test2 has stopped streaming.")],
+			self.bot.messages
 		)

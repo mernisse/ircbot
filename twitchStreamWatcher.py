@@ -38,6 +38,7 @@ from botlogger import err, log, logException
 
 STREAM = None
 
+
 def privmsg(self, user, channel, msg):
 	if channel == self.nickname:
 		return

@@ -49,11 +49,13 @@ def parseTags(tags):
 
 	return tagDict
 
+
 def signedOn(self):
 	log("twitchChatExtensions: requesting extra capabilities.")
 	self.sendLine("CAP REQ :twitch.tv/commands")
 	self.sendLine("CAP REQ :twitch.tv/membership")
 	self.sendLine("CAP REQ :twitch.tv/tags")
+
 
 def unknown(self, prefix, command, params):
 	""" Handle twitch CAP tags and re-inject them into the bot to be handled
@@ -95,5 +97,6 @@ def unknown(self, prefix, command, params):
 
 		else:
 			log("unknown twitch command received: {}".format(paramList))
+
 
 core.MODULES.append(__name__)

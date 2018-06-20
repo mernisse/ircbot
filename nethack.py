@@ -55,6 +55,7 @@ from time import time
 
 from botlogger import debug, err, log, logException
 
+ERRMSG = "The filesystem error hits! Your joke turns to dust!--More--"
 NH_FIRED = {}
 FORTUNES = []
 FORTUNES_TSTAMP = 0
@@ -115,7 +116,7 @@ def privmsg(self, user, channel, msg):
 		return
 
 	if not load_fortunes():
-		self.msg(dst, "The filesystem error hits! Your nethack.nki turns to dust!--More--")
+		self.msg(dst, ERRMSG)
 		NH_FIRED[dst] = time()
 
 	if len(FORTUNES) > 0:

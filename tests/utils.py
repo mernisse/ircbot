@@ -83,6 +83,9 @@ class StubTwitchClient(object):
 			}
 		}
 
+	def dateStringToSecs(self, dateString):
+		return 0
+
 	def getUserId(self, userName):
 		if userName == "test1":
 			return "1234567890"
@@ -97,7 +100,13 @@ class StubTwitchClient(object):
 			raise ValueError("unknown username specified")
 
 	def getStreamingStatus(self, userId):
-		return self._getStreamingStatusReply["data"]
+		reply = [x for x in self._getStreamingStatusReply["data"]
+			if x["user_id"] == userId]
+
+		if not reply:
+			return None
+
+		return reply
 
 
 class StubIrcRobot(object):

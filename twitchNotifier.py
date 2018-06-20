@@ -42,9 +42,9 @@ class Notification(object):
 	""" Hold state of Notifications sent to IRC users so we do not
 	continue notifying on a stream over and over again.
 	"""
-	def __init__(self, twitchUsername, dateString, streamName):
+	def __init__(self, twitchUsername, started, streamName):
 		self.twitchUsername = twitchUsername
-		self.started = self.dateStringToSecs(dateString)
+		self.started = started
 		self.streamName = streamName
 
 	def __eq__(self, other):
@@ -65,66 +65,21 @@ class Notification(object):
 			self.started
 		)
 
-	def dateStringToSecs(self, dateString):
-		""" Convert Twitch date/time strings to epoch seconds. """
-		# 2017-08-14T15:45:17Z
-		return time.mktime(
-			time.strptime(
-				dateString,
-				"%Y-%m-%dT%H:%M:%SZ"
-			)
-		)
-
 
 def periodic(self):
-	""" Every CHECK_MINS iterate through STREAMS and see if we should
-	notify "twitch"/"users".  Uses Notification() to ensure we don't
-	emit a notification more than once per stream title/start time.
+	""" Iterate through STREAMS and look for streams that are live.
+	Uses Notification() to ensure we don't emit a notification more
+	than once per stream title/start time.
 	"""
-	global CHECK_MINS, STREAMS
-	now = time.time()
-	toCheck = []
+	global STREAMS
 
-	for twitchStream in STREAMS:
-		if (now - twitchStream.lastChecked) < (CHECK_MINS * 60):
-			continue
+	for stream in STREAMS:
+		# .live does not trigger the refresh, so get title to make sure
+		# the object is up-to-date.  Maybe make live trigger a refresh
+		# to allow this to not be needed...
+		streamTitle = stream.title
 
-		toCheck.append(twitchStream)
-		twitchStream.lastChecked = now
-
-	if not toCheck:
-		return
-
-	try:
-		status = twitchClient.getStreamingStatus(
-			[x.userId for x in toCheck]
-		)
-	except TwitchAPIError:
-		return
-
-	for stream in toCheck:
-		for twitchStream in status:
-			if twitchStream["user_id"] != stream.userId:
-				continue
-
-			newNotification = Notification(
-				stream.twitchUsername,
-				twitchStream["started_at"],
-				twitchStream["title"]
-			)
-
-			if stream.lastNotification == newNotification:
-				break
-
-			stream.lastNotification = newNotification
-			for user in config.getList("users"):
-				self.msg(user, "{} is streaming {}".format(
-					stream.twitchUsername,
-					twitchStream["title"]
-				))
-			break
-
-		else:
+		if not stream.live:
 			if stream.lastNotification:
 				stream.lastNotification = None
 				for user in config.getList("users"):
@@ -132,11 +87,33 @@ def periodic(self):
 						stream.twitchUsername
 					))
 
+			continue
+
+		newNotification = Notification(
+			stream.twitchUsername,
+			stream.started,
+			streamTitle
+		)
+
+		if stream.lastNotification == newNotification:
+			continue
+
+		stream.lastNotification = newNotification
+		for user in config.getList("users"):
+			self.msg(user, "{} is streaming {}".format(
+				stream.twitchUsername,
+				streamTitle
+			))
+
 
 config = core.config.getChildren("twitch")
 twitchClient = twitchApi.TwitchClient(config.getStr("client_id"))
 for twitchUsername in config.getList("streams"):
-	STREAMS.append(twitchApi.Stream(twitchClient, twitchUsername))
+	STREAMS.append(twitchApi.Stream(
+		twitchClient,
+		twitchUsername,
+		CHECK_MINS
+	))
 
 log("twitchNotifier loaded {} streams".format(len(STREAMS)))
 core.register_module(__name__)

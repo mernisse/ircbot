@@ -41,6 +41,7 @@ class Stream(object):
 		self._lastChecked = 0
 		self._title = ""
 		self._userId = ""
+		self.lastNotification = None
 		self.live = False
 		self.started = 0
 		self.twitchClient = twitchClient
@@ -57,7 +58,11 @@ class Stream(object):
 		except Exception:
 			return
 
+		self._lastChecked = now
 		if not status:
+			self.live = False
+			self.started = 0
+			self._title = ""
 			return
 
 		if status[0]["type"] == "live":
@@ -78,7 +83,7 @@ class Stream(object):
 		if not self.live:
 			return "not live."
 
-		self._title
+		return self._title
 
 	@property
 	def userId(self):
@@ -89,9 +94,6 @@ class Stream(object):
 			self._userId = self.twitchClient.getUserId(self.twitchUsername)
 			return self._userId
 		except Exception as e:
-			err("Cannot resolve Twitch userId for {}".format(
-				self.twitchUsername
-			))
 			return None
 
 	@property
@@ -184,7 +186,6 @@ class TwitchClient(object):
 		try:
 			userId = jsonStatus["data"][0]["id"]
 		except Exception as e:
-			logException(e)
 			raise ValueError("API failure fetching {}".format(userName))
 
 		return userId
@@ -225,13 +226,10 @@ class TwitchClient(object):
 			return response.json()
 
 		except requests.exceptions.Timeout:
-			err("_fetch(): timeout connecting to {}".format(apiUrl))
 			raise TwitchAPIError("Timeout")
 
 		except requests.exceptions.ConnectionError:
-			err("_fetch(): failed to connect to {}".format(apiUrl))
 			raise TwitchAPIError("Connection failed")
 
 		except Exception as e:
-			logException(e)
 			raise TwitchAPIError("General Error")

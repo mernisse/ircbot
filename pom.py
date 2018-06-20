@@ -64,12 +64,11 @@ def potm(time_t):
 
 	# 0=year, 1=mon,  2=mday, 3=hour, 4=min, 5=sec, 6=wday, 7=yday, 8=dst
 	# python is not perl, we don't need frickery.
-	days = (time_t[7]) + ((time_t[3] + (time_t[4] / 60.0) +
-		   (time_t[5] / 3600.0)) / 24)
+	days = time_t[7]
+	days += ((time_t[3] + (time_t[4] / 60.0) + (time_t[5] / 3600.0)) / 24)
 
 	(N, Msol, Ec, LambdaSol, l, Mm, Ev, Ac) = ('', '', '', '', '', '', '', '')
 	(A3, Mmprime, A4, lprime, V, ldprime, D) = ('', '', '', '', '', '', '')
-	Nm = ''
 	cnt = EPOCH
 
 	while cnt < time_t[0]:
@@ -80,26 +79,25 @@ def potm(time_t):
 		cnt = cnt + 1
 
 	# From potm() in pom.c
-	N = adj360(360.0 * days / 365.242191)		# sec 46 #3
-	Msol = adj360(N + EPSILONg - RHOg)		# sec 46 #4
-	Ec = 360 / PI * ECCEN * sin(dtor(Msol))		# sec 46 #5
-	LambdaSol = N + Ec + EPSILONg			# sec 46 #6
+	N = adj360(360.0 * days / 365.242191)			# sec 46 #3
+	Msol = adj360(N + EPSILONg - RHOg)			# sec 46 #4
+	Ec = 360 / PI * ECCEN * sin(dtor(Msol))			# sec 46 #5
+	LambdaSol = N + Ec + EPSILONg				# sec 46 #6
 	LambdaSol = adj360(LambdaSol)
 
-	l = adj360(13.1763966 * days + LZERO)		# sec 65 #4
-	Mm = adj360(l - (0.1114041 * days) - PZERO)	# sec 65 #5
-	Nm = adj360(NZERO - (0.0529539 * days))		# sec 65 #6
+	l = adj360(13.1763966 * days + LZERO)			# sec 65 #4
+	Mm = adj360(l - (0.1114041 * days) - PZERO)		# sec 65 #5
 	Ev = 1.2739 * sin(dtor(2 * (l - LambdaSol) - Mm))	# sec 65 #7
-	Ac = 0.1858 * sin(dtor(Msol))			# sec 65 #8
+	Ac = 0.1858 * sin(dtor(Msol))				# sec 65 #8
 	A3 = 0.37 * sin(dtor(Msol))
-	Mmprime = Mm + Ev - Ac - A3			# sec 65 #9
-	Ec = 6.2886 * sin(dtor(Mmprime))		# sec 65 #10
-	A4 = 0.214 * sin(dtor(2 * Mmprime))		# sec 65 #11
-	lprime = l + Ev + Ec - Ac + A4			# sec 65 #12
+	Mmprime = Mm + Ev - Ac - A3				# sec 65 #9
+	Ec = 6.2886 * sin(dtor(Mmprime))			# sec 65 #10
+	A4 = 0.214 * sin(dtor(2 * Mmprime))			# sec 65 #11
+	lprime = l + Ev + Ec - Ac + A4				# sec 65 #12
 	V = 0.6583 * sin(dtor(2 * (lprime - LambdaSol)))	# sec 65 #13
-	ldprime = lprime + V				# sec 65 #14
-	D = ldprime - LambdaSol				# sec 67 #2
-	return 50.0 * (1 - cos(dtor(D)))		# sec 67 #3
+	ldprime = lprime + V					# sec 65 #14
+	D = ldprime - LambdaSol					# sec 67 #2
+	return 50.0 * (1 - cos(dtor(D)))			# sec 67 #3
 
 
 def isleap(year):
