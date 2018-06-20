@@ -32,6 +32,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import sys
 import unittest
 
+import twitchApi
 import twitchNotifier
 
 sys.path.append("tests")
@@ -42,10 +43,11 @@ class TwitchTests(unittest.TestCase):
 	def setUp(self):
 		self.bot = utils.StubIrcRobot()
 		twitchNotifier.config = utils.StubConfig()
-		twitchNotifier.twitchClient = utils.StubTwitchClient("")
+		twitchClient = utils.StubTwitchClient("")
+		twitchNotifier.twitchClient = twitchClient
 		twitchNotifier.STREAMS = [
-			twitchNotifier.Stream("test1"),
-			twitchNotifier.Stream("test2")
+			twitchApi.Stream(twitchClient, "test1"),
+			twitchApi.Stream(twitchClient, "test2")
 		]
 
 	def testTwitchUsersLive(self):

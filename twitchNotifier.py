@@ -30,35 +30,12 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import core
 import requests
 import time
+import twitchApi
 import urllib.parse
 from botlogger import err, log, logException
 
 CHECK_MINS = 15
-LAST_CHECK = 0
 STREAMS = []
-
-
-class Stream(object):
-	""" Hold state of a Twitch stream. """
-	def __init__(self, twitchUsername):
-		self._userId = ""
-		self.twitchUsername = twitchUsername
-		self.lastChecked = 0
-		self.lastNotification = None
-
-	@property
-	def userId(self):
-		""" Lazy load the userId property. """
-		if self._userId:
-			return self._userId
-		try:
-			self._userId = twitchClient.getUserId(self.twitchUsername)
-			return self._userId
-		except Exception as e:
-			err("Cannot resolve Twitch userId for {}".format(
-				self.twitchUsername
-			))
-			return None
 
 
 class Notification(object):
@@ -97,82 +74,6 @@ class Notification(object):
 				"%Y-%m-%dT%H:%M:%SZ"
 			)
 		)
-
-
-class TwitchAPIError(Exception):
-	pass
-
-
-class TwitchClient(object):
-	""" Super minimal implementation of a New Twitch API client."""
-	baseUrl = "https://api.twitch.tv/helix/"
-
-	def __init__(self, clientId):
-		self.clientId = clientId
-
-	def getUserId(self, userName):
-		""" Resolve a Twitch Username to their userId. """
-		jsonStatus = self._fetch("users", {
-			"login": userName
-		})
-
-		if not jsonStatus or not jsonStatus.get("data", None):
-			raise ValueError("Username not found.")
-
-		try:
-			userId = jsonStatus["data"][0]["id"]
-		except Exception as e:
-			logException(e)
-			raise ValueError("API failure fetching {}".format(userName))
-
-		return userId
-
-	def getStreamingStatus(self, userId):
-		""" Query the Twitch New API for the live streams of the given
-		userIds.
-		"""
-		if not type(userId) == list:
-			userId = [userId]
-
-		jsonStatus = self._fetch('streams', {
-			"user_id": userId,
-		})
-
-		if not jsonStatus:
-			return []
-
-		if not jsonStatus.get("data", None):
-			return []
-
-		return jsonStatus["data"]
-
-	def _fetch(self, url, args):
-		headers = {
-			"Client-ID": self.clientId,
-		}
-
-		try:
-			apiUrl = urllib.parse.urljoin(self.baseUrl, url)
-			response = requests.get(
-				apiUrl,
-				headers=headers,
-				params=args,
-				timeout=0.3
-			)
-			response.raise_for_status()
-			return response.json()
-
-		except requests.exceptions.Timeout:
-			err("_fetch(): timeout connecting to {}".format(apiUrl))
-			raise TwitchAPIError("Timeout")
-
-		except requests.exceptions.ConnectionError:
-			err("_fetch(): failed to connect to {}".format(apiUrl))
-			raise TwitchAPIError("Connection failed")
-
-		except Exception as e:
-			logException(e)
-			raise TwitchAPIError("General Error")
 
 
 def periodic(self):
@@ -233,9 +134,9 @@ def periodic(self):
 
 
 config = core.config.getChildren("twitch")
-twitchClient = TwitchClient(config.getStr("client_id"))
+twitchClient = twitchApi.TwitchClient(config.getStr("client_id"))
 for twitchUsername in config.getList("streams"):
-	STREAMS.append(Stream(twitchUsername))
+	STREAMS.append(twitchApi.Stream(twitchClient, twitchUsername))
 
 log("twitchNotifier loaded {} streams".format(len(STREAMS)))
 core.register_module(__name__)
