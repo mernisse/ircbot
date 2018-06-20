@@ -279,6 +279,7 @@ def connectionLost(bot):
 		return
 
 	apiServer.join()
+	apiServer = None
 
 
 def privmsgWithTags(self, user, channel, msg, tags):
