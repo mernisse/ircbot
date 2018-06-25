@@ -28,6 +28,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+import html
 import requests
 import sys
 
@@ -81,8 +82,7 @@ def processurl(url):
 
 	soup = BeautifulSoup(response.text, "lxml")
 	title = load_title(url, soup)
-	parser = HTMLParser()
-	title = parser.unescape(title)
+	title = html.unescape(title)
 	return (url, title)
 
 

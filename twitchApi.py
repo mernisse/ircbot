@@ -28,6 +28,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+import calendar
 import datetime
 import requests
 import time
@@ -39,10 +40,10 @@ class Stream(object):
 	def __init__(self, twitchClient, twitchUsername, checkMinutes=1):
 		self._checkMinutes = checkMinutes
 		self._lastChecked = 0
+		self._live = False
 		self._title = ""
 		self._userId = ""
 		self.lastNotification = None
-		self.live = False
 		self.started = 0
 		self.twitchClient = twitchClient
 		self.twitchUsername = twitchUsername
@@ -54,33 +55,36 @@ class Stream(object):
 			return
 
 		try:
-			status = self.twitchClient.getStreamingStatus(self.userId)
+			status = self.twitchClient.getStreamingStatus(
+				self.userId
+			)
 		except Exception:
 			return
 
 		self._lastChecked = now
+		self._live = False
+		self.started = 0
+		self._title = ""
+
 		if not status:
-			self.live = False
-			self.started = 0
-			self._title = ""
 			return
 
 		if status[0]["type"] == "live":
-			self.live = True
+			self._live = True
 			self.started = self.twitchClient.dateStringToSecs(
 				status[0]["started_at"]
 			)
 			self._title = status[0]["title"]
 
-		else:
-			self.live = False
-			self.started = 0
-			self._title = ""
+	@property
+	def live(self):
+		self._reloadIfExpired()
+		return self._live
 
 	@property
 	def title(self):
 		self._reloadIfExpired()
-		if not self.live:
+		if not self._live:
 			return "not live."
 
 		return self._title
@@ -91,7 +95,9 @@ class Stream(object):
 		if self._userId:
 			return self._userId
 		try:
-			self._userId = self.twitchClient.getUserId(self.twitchUsername)
+			self._userId = self.twitchClient.getUserId(
+				self.twitchUsername
+			)
 			return self._userId
 		except Exception as e:
 			return None
@@ -108,49 +114,44 @@ class Stream(object):
 		days, hours = divmod(hours, 24)
 		weeks, days = divmod(days, 7)
 
+		output = ""
 		if weeks:
-			return "{} wk, {} days, {}:{}:{}".format(
-				weeks,
-				days,
-				hours,
-				mins,
-				secs
-			)
+			output += "{:.0f} wk, ".format(weeks)
 
-		if days:
-			return "{} days, {}:{}:{}".format(
-				days,
-				hours,
-				mins,
-				secs
-			)
+		if days > 1:
+			output += "{:.0f} days, ".format(days)
+		elif days == 1:
+			output += "{:.0f} day, ".format(days)
 
 		if hours > 1:
-			return "{} hours, {}:{}".format(
+			output += "{:.0f} hours, {:.0f}:{:02.0f}".format(
 				hours,
 				mins,
 				secs
 			)
+			return output
 
 		elif hours == 1:
-			return "{} hour, {}:{}".format(
+			output += "{:.0f} hour, {:.0f}:{:02.0f}".format(
 				hours,
 				mins,
 				secs
 			)
+			return output
 
 		if mins > 1:
-			return "{} minutes, {} seconds".format(
+			output += "{:.0f} minutes, ".format(
 				mins,
 				secs
 			)
 		elif mins == 1:
-			return "{} minutes, {} seconds".format(
-				mins,
+			output += "1 minute, ".format(
 				secs
 			)
 
-		return "{} seconds".format(secs)
+		output += "{:.0f} seconds".format(secs)
+
+		return output
 
 
 class TwitchAPIError(Exception):
@@ -167,7 +168,7 @@ class TwitchClient(object):
 	def dateStringToSecs(self, dateString):
 		""" Convert Twitch date/time strings to epoch seconds. """
 		# 2017-08-14T15:45:17Z
-		return time.mktime(
+		return calendar.timegm(
 			time.strptime(
 				dateString,
 				"%Y-%m-%dT%H:%M:%SZ"
@@ -186,7 +187,9 @@ class TwitchClient(object):
 		try:
 			userId = jsonStatus["data"][0]["id"]
 		except Exception as e:
-			raise ValueError("API failure fetching {}".format(userName))
+			raise ValueError("API failure fetching {}".format(
+				userName
+			))
 
 		return userId
 
@@ -223,6 +226,7 @@ class TwitchClient(object):
 				timeout=1
 			)
 			response.raise_for_status()
+			print(response.json())
 			return response.json()
 
 		except requests.exceptions.Timeout:

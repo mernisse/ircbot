@@ -30,6 +30,53 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
 import bot
+import copy
+
+
+JSON_REPLIES = {
+	"getStreamingStatus": {
+		"data": [{
+			"id": "0",
+			"user_id": "1234567890",
+			"game_id": "458688",
+			"community_ids": [],
+			"type": "live",
+			"title": "Test Stream",
+			"viewer_count": 1,
+			"started_at": "2018-06-08T12:56:28Z",
+			"language": "en",
+			"thumbnail_url": "foo"
+		},
+		{
+			"id": "1",
+			"user_id": "1234567891",
+			"game_id": "458688",
+			"community_ids": [],
+			"type": "live",
+			"title": "Test Stream 2",
+			"viewer_count": 1,
+			"started_at": "2018-06-08T12:56:28Z",
+			"language": "en",
+			"thumbnail_url": "bar"
+		}],
+		"pagination": {
+			"cursor": ""
+		}
+	},
+	"getUserId": {
+		"data":[{
+			"id":"1234567890",
+			"login":"test1",
+			"display_name":"Test One",
+			"type":"",
+			"broadcaster_type":"",
+			"description":"",
+			"profile_image_url":"",
+			"offline_image_url":"",
+			"view_count":9192128
+		}]
+	}
+}
 
 
 class StubConfig(object):
@@ -51,37 +98,9 @@ class StubConfig(object):
 class StubTwitchClient(object):
 	""" Override for the twitch client class"""
 	def __init__(self, clientId):
-		self._getStreamingStatusReply = {
-			"data": [
-				{
-					"id": "0",
-					"user_id": "1234567890",
-					"game_id": "458688",
-					"community_ids": [],
-					"type": "live",
-					"title": "Test Stream",
-					"viewer_count": 1,
-					"started_at": "2018-06-08T12:56:28Z",
-					"language": "en",
-					"thumbnail_url": "foo"
-				},
-				{
-					"id": "1",
-					"user_id": "1234567891",
-					"game_id": "458688",
-					"community_ids": [],
-					"type": "live",
-					"title": "Test Stream 2",
-					"viewer_count": 1,
-					"started_at": "2018-06-08T12:56:28Z",
-					"language": "en",
-					"thumbnail_url": "bar"
-				}
-			],
-			"pagination": {
-				"cursor": ""
-			}
-		}
+		self._getStreamingStatusReply = copy.deepcopy(
+			JSON_REPLIES["getStreamingStatus"]
+		)
 
 	def dateStringToSecs(self, dateString):
 		return 0
@@ -134,3 +153,7 @@ class StubIrcRobot(object):
 	def topic(self, channel, event=None):
 		if event:
 			self.topicResult = (channel, event)
+
+
+class StubRequests(object):
+	pass
