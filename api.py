@@ -176,39 +176,71 @@ class ApiServer(threading.Thread):
 				client.touch()
 
 				if _msg.get("request") == "listChannels":
-					await self._sendMessage(socket, self.bot.channels)
+					await self._sendMessage(
+						socket,
+						"listChannels",
+						self.bot.channels
+					)
 
 				elif _msg.get("request") == "listModules":
-					await self._sendMessage(socket, core.MODULES)
+					await self._sendMessage(
+						socket,
+						"listModules",
+						core.MODULES
+					)
 
 				elif _msg.get("request") == "listUsers":
 					target = _msg.get("target")
 					if not target:
-						await self._sendError(socket, "incomplete request")
+						await self._sendError(
+							socket,
+							"incomplete request"
+						)
 						continue
 
 					if target not in self.bot.channels:
-						await self._sendError(socket, "invalid channel")
+						await self._sendError(
+							socket,
+							"invalid channel"
+						)
 						continue
 
-					await self._sendMessage(socket, self.bot.chatters[target])
+					await self._sendMessage(
+						socket,
+						"listUsers",
+						self.bot.chatters[target]
+					)
 
 				elif _msg.get("request") == "privmsg":
 					target = _msg.get("target")
 					message = _msg.get("message")
 					if not target or not message:
-						await self._sendError(socket, "incomplete request")
+						await self._sendError(
+							socket,
+							"incomplete request"
+						)
 						continue
 
 					self.bot.msg(target, message)
-					await self._sendMessage(socket, "done")
+					await self._sendMessage(
+						socket,
+						"privmsg",
+						"done"
+					)
 
 				elif _msg.get("request") == "reloadConfig":
 					self.bot.factory.config.rehash()
-					await self._sendMessage(socket, "done")
+					await self._sendMessage(
+						socket,
+						"reloadConfig",
+						"done"
+					)
 
 				else:
-					await self._sendError(socket, "invalid request")
+					await self._sendError(
+						socket,
+						"invalid request"
+					)
 
 			except websockets.exceptions.ConnectionClosed:
 				log("ApiServer: Client {} disconnected.".format(
@@ -235,7 +267,10 @@ class ApiServer(threading.Thread):
 
 	async def _sendError(self, socket, message):
 		""" Send an Error response back to the client. """
-		_resp = {"status": "error", "message": message}
+		_resp = {
+			"message": message,
+			"status": "error"
+		}
 		await socket.send(json.dumps(_resp))
 
 	async def _sendEvent(self, socket, message):
@@ -243,9 +278,13 @@ class ApiServer(threading.Thread):
 		_resp = message
 		await socket.send(json.dumps(_resp))
 
-	async def _sendMessage(self, socket, message):
+	async def _sendMessage(self, socket, event, message):
 		""" Send a reply message back to the client. """
-		_resp = {"status": "ok", "message": message}
+		_resp = {
+			"event": event,
+			"message": message,
+			"status": "ok"
+		}
 		await socket.send(json.dumps(_resp))
 
 
