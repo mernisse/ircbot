@@ -226,7 +226,7 @@ class TwitchClient(object):
 				timeout=1
 			)
 			response.raise_for_status()
-			print(response.json())
+			#print(response.json())
 			return response.json()
 
 		except requests.exceptions.Timeout:
