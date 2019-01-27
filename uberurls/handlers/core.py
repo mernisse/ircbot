@@ -35,12 +35,22 @@ from botlogger import log, logException
 def processurl(url):
 	''' try to fetch a url from the interwebs. '''
 	try:
+		# Looks like streams respond with 501 for HEAD, at least
+		# Akamai ones do, so try that first just to try to guard
+		# against the bot wedging in here...
+		response = requests.head(url, headers={
+				"User-Agent": "uberurls/3.0 (python)"
+			},
+			timeout=2
+		)
+		response.raise_for_status()
 		response = requests.get(url, headers={
 				"User-Agent": "uberurls/3.0 (python)"
 			},
 			timeout=2
 		)
 		response.raise_for_status()
+
 	except Exception as e:
 		logException(e)
 		return None
