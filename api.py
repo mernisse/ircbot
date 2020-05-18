@@ -56,14 +56,14 @@ class ApiClient(object):
 		""" Return the remote address of the connection taking potential
 		Proxy into account.
 		"""
-		if "X-Forwarded-For" in [
-			i[0]
-			for i in self.socket.raw_request_headers
-		]:
-			return [
-				i[1]
-				for i in self.socket.raw_request_headers
-				if i[0] == "X-Forwarded-For"][0]
+		# raw_request_headers removed in v 6.0
+		request_headers = self.socket.request_headers.raw_items()
+		xhdr = [
+			x[1] for x in request_headers
+			if x[0] == 'X-Forwarded-For'
+		]
+		if xhdr:
+			return xhdr[0]
 		else:
 			return self.socket.remote_address[0]
 
