@@ -39,7 +39,7 @@ class Stream(object):
 	""" Hold state of a Twitch stream. """
 	def __init__(self, twitchClient, twitchUsername, checkMinutes=1):
 		self._checkMinutes = checkMinutes
-		self._lastChecked = 0
+		self._lastChecked = time.time() + 86400
 		self._live = False
 		self._title = ""
 		self._userId = ""
