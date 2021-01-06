@@ -1,5 +1,5 @@
 # coding: utf-8
-"""core.py (c) 2014-2018 Matthew J Ernisse <matt@going-flying.com>
+"""core.py (c) 2014-2021 Matthew J Ernisse <matt@going-flying.com>
 
 Base handler for urls.
 
@@ -30,62 +30,56 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import re
 import requests
 from botlogger import log, logException
+from urllib.parse import urlparse
 
 
-def processurl(url):
-	''' try to fetch a url from the interwebs. '''
-	try:
-		# Looks like streams respond with 501 for HEAD, at least
-		# Akamai ones do, so try that first just to try to guard
-		# against the bot wedging in here...
-		response = requests.head(url, headers={
-				"User-Agent": "uberurls/3.0 (python)"
-			},
-			timeout=2
-		)
-		response.raise_for_status()
-		response = requests.get(url, headers={
-				"User-Agent": "uberurls/3.0 (python)"
-			},
-			timeout=2
-		)
-		response.raise_for_status()
-
-	except Exception as e:
-		logException(e)
-		return None
-
-	log("core.processurl(): loaded {}".format(url))
-	return response
-
-
-#
-# Helpers
-#
 def detect_valid_urls(s):
-	''' Return a list of URLs extracted from a string. '''
+	''' Return a list of URLs extracted from a string.  '''
 	r = re.compile('((?:https?://|www\.|ftp\.)[-\w\d+&@#/\\%=~_|$?!:;,.]*[-\w\d+&@#/\\%=~_|$])', re.I)
 
-	try:
-		matches = r.findall(s)
-		if not matches:
-			return []
-
-		return matches
-
-	except Exception as e:
-		logException(e)
+	matches = r.findall(s)
+	if not matches:
 		return []
+
+	ret = []
+	for match in matches:
+		parsed = urlparse(match)
+		if not parsed.scheme:
+			match = f'https://{match}'
+
+		ret.append(match)
+
+	return ret
 
 
 def load_title(url, soup):
 	''' Return the title of the page.  In case of error, return what we
 	were able to convert.'''
-
 	try:
-		title = soup.title.text.strip()
-
+		return soup.title.text.strip()
 	except Exception as e:
-		logException(e)
+		return None
 
-	return title
+
+def processurl(url):
+	''' try to fetch a url from the interwebs. '''
+	# Looks like streams respond with 501 for HEAD, at least
+	# Akamai ones do, so try that first just to try to guard
+	# against the bot wedging in here...
+	response = requests.head(
+		url,
+		headers={"User-Agent": "uberurls/3.0 (python)"},
+		timeout=2
+	)
+	response.raise_for_status()
+
+	response = requests.get(
+		url,
+		headers={"User-Agent": "uberurls/3.0 (python)"},
+		timeout=2
+	)
+	response.raise_for_status()
+
+	log(f'core.processurl(): loaded {url}')
+	return response
+

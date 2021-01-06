@@ -1,5 +1,5 @@
 # coding: utf-8
-""" uberurls.handlers (c) 2013-2018 Matthew Ernisse <matt@going-flying.com>
+""" uberurls.handlers (c) 2013-2021 Matthew Ernisse <matt@going-flying.com>
 All Rights Reserved.
 
 Url processing helpers for the uberurls bot module.
@@ -32,57 +32,71 @@ import html
 import requests
 import sys
 
-from . import core, soundcloud, youtube
+from . import core, gemini, soundcloud, youtube
 from bs4 import BeautifulSoup
 from botlogger import debug, err, log, logException
 from html.parser import HTMLParser
 
-__all__ = ["core", "soundcloud", "youtube"]
+__all__ = ["core", "gemini", "soundcloud", "youtube"]
 __face__ = "( ͡° ͜ʖ ͡°)"
 
 
-def processurl(url):
-	''' Meta-function.
-	Call all submodules processurl functions.  The function should
-	return None if it doesn't care.  Otherwise it should return a
-	string or a requests.Response object.
-	'''
-	poised = None
-	response = None
-	url = sanitize_url(url)
+def detect_valid_urls(s):
+	''' Dispatch a privmsg to any module that cares to see if it can
+	find a url it wants in there.
 
+	Return a list of tuples with the module and the url.
+	'''
+
+	found = []
 	for mod in __all__:
 		mod = ".".join([__name__, mod])
 
-		if not getattr(sys.modules[mod], 'processurl', None):
+		if not getattr(sys.modules[mod], 'detect_valid_urls', None):
 			continue
 
-		poised = sys.modules[mod].processurl(url)
+		poised = sys.modules[mod].detect_valid_urls(s)
 		if not poised:
 			continue
 
-		if isinstance(poised, str):
-			err('processurl(): module %s returned error %s' % (
-				mod, poised
-			))
-			continue
+		for url in poised:
+			found.append((mod, url))
 
-		response = poised
+	return found
 
-	if not response or not isinstance(response, requests.Response):
+
+def processurl(mod_url):
+	'''  Expects a tuple of (module name, url) as returned by
+	detect_valid_urls.  Call the submodule's processurl function.
+
+	If that returns a requests.Reponse it will be loaded into
+	BeautifulSoup prior to passing to load_title().
+	'''
+	poised = None
+	responder = None
+	response = None
+	mod = mod_url[0]
+	url = sanitize_url(mod_url[1])
+
+	if not getattr(sys.modules[mod], 'processurl', None):
 		err('processurl(): no module returned a valid response.')
 		raise Exception('failed to load url')
 
-	#
-	# handle embedded encoding in the content-type field
-	#
-	mimetype = response.headers['content-type']
-	if not mimetype.startswith('text/html'):
-		return (url, mimetype)
+	response = sys.modules[mod].processurl(url)
+	if not response:
+		return
 
-	soup = BeautifulSoup(response.text, "lxml")
-	title = load_title(url, soup)
-	title = html.unescape(title)
+	if not isinstance(response, requests.Response):
+		title = load_title(url, response)
+
+	elif not response.headers.get('content-type').startswith('text/html'):
+		title = response.headers.get('content-type')
+
+	else:
+		soup = BeautifulSoup(response.text, "lxml")
+		title = load_title(url, soup)
+		title = html.unescape(title)
+
 	return (url, title)
 
 
@@ -106,7 +120,7 @@ def sanitize_url(url):
 
 def load_title(url, response):
 	''' Meta-function.
-	Call all submodules load_title functions.  The function should
+	Call all submodules load_title functions.  The called function should
 	return None if it doesn't care about the URL.
 	'''
 	poised = None
@@ -120,9 +134,7 @@ def load_title(url, response):
 
 		poised = sys.modules[mod].load_title(url, response)
 		if poised:
-			log('load_title(): %s returned %s' % (
-				mod, poised))
-
+			log(f'load_title(): {mod} returned {poised}')
 			title = poised
 
 	if title:

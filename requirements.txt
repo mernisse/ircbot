@@ -1,5 +1,6 @@
 bs4
 coverage
 feedparser
+ignition-gemini
 twisted
 websockets

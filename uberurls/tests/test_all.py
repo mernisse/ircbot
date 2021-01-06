@@ -48,6 +48,7 @@ class UberUrlsTestCase(unittest.TestCase):
 		self.user = "test!test.host"
 
 	def testRedirectUrl(self):
+		''' Should successfully follow HTTP redirects. '''
 		expected = [(
 			self.channel,
 			'http://www.ub3rgeek.net/ [Matthew Ernisse]'
@@ -59,6 +60,7 @@ class UberUrlsTestCase(unittest.TestCase):
 		self.assertEqual(self.bot.result, expected)
 
 	def testNonExistentUrl(self):
+		''' Should not speak if the URL fails to load. '''
 		expected = []
 		msg = "http://foobar.baz"
 		with self.assertRaises(Exception):
@@ -67,6 +69,7 @@ class UberUrlsTestCase(unittest.TestCase):
 		self.assertEqual(self.bot.result, expected)
 
 	def testNoUrlMsg(self):
+		''' Should not speak if there is no URL in the message. '''
 		expected = []
 		msg = ""
 		uberurls.privmsg(self.bot, self.user, self.channel, msg)
