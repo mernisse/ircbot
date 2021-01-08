@@ -1,0 +1,14 @@
+{
+	"channels": [
+		"#test1",
+		"#test2"
+	],
+	"module": {
+		"key": [
+			"someval"
+		]
+	},
+	"nickname": "test",
+	"port": "6969",
+	"ssl": "true"
+}
