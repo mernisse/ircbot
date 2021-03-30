@@ -101,13 +101,17 @@ class ApiServer(threading.Thread):
 
 	def run(self):
 		""" Start the websocket server """
-		log("ApiServer thread starting...")
+		config = core.config.getChildren('api')
+		bind_host = config.getStr('host', '::')
+		bind_port = config.getInt('port', 8765)
+		log(f"ApiServer thread starting {bind_host}:{bind_port}...")
+
 		while not self.shouldStop.is_set():
 			try:
 				self.server = websockets.serve(
 					self._handle,
-					"::",
-					8765,
+					bind_host,
+					bind_port,
 					loop=self.evt
 				)
 				self.evt.run_until_complete(

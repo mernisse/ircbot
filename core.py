@@ -126,9 +126,9 @@ class Configuration(object):
 		""" Convenince function for self.config.get(key, []) """
 		return self.config.get(key, [])
 
-	def getStr(self, key):
+	def getStr(self, key, default=''):
 		""" Convenince function for self.config.get(key, "") """
-		return self.config.get(key, "")
+		return self.config.get(key, default)
 
 
 class StopCallBacks(Exception):
