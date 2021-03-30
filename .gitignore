@@ -11,5 +11,6 @@ data/*.*
 deadModules/
 html/
 htmlcov/
-nick/
 latex/
+nick/
+!tests/*.json

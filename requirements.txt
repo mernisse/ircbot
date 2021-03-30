@@ -1,5 +1,9 @@
 bs4
 coverage
 feedparser
+html5lib
+ignition-gemini
+service_identity
 twisted
 websockets
+yahoo_fin

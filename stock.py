@@ -1,7 +1,6 @@
-# coding: utf-8
-"""__init__.py - (c) 2013 - 2021 Matthew J. Ernisse <matt@going-flying.com>
+''' stock.py (c) 2014 - 2021 Matthew J. Ernisse <matt@going-flying.com>
 
-Catch, log, and pretty-print urls.
+Emit stock information from the Yahoo API (uses yahoo_fin on pypi)
 
 Redistribution and use in source and binary forms,
 with or without modification, are permitted provided
@@ -26,43 +25,64 @@ OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-"""
+'''
+
 import core
-import requests
-from botlogger import debug, err, log, logException
+import re
 
-from . import handlers
+from botlogger import *
+from yahoo_fin import stock_info
 
-__all__ = ["handlers"]
+def fetch_quote(symbol):
+	curr = stock_info.get_quote_data(symbol)
+	mc = format_thousands(curr['marketCap'])
+
+	return (f'{curr["longName"]}: ${curr["regularMarketPrice"]:0,.02f} '
+		f'({curr["regularMarketChange"]:0.02f} '
+		f'{curr["regularMarketChangePercent"]:0.02f}% '
+		f'Cap {mc})')
+
+
+def format_thousands(num):
+	suffix = ['', 'K$', 'MM$', 'BN$', 'TN$']
+	i = 0
+
+	while num / 1000 > 1.0:
+		i += 1
+		num /= 1000
+
+	return f'{num:0,.04f} {suffix[i]}'
 
 
 def privmsg(self, user, channel, msg):
-	''' Module hook function for the ircbot.  Called on receipt of
-	a privmsg.
-	'''
-	speaker = user.split('!', 1)[0]
+	dst = user.split('!', 1)[0]
+	if channel != self.nickname:
+		msg = self._forMe(msg)
+		if not msg:
+			return
 
-	#
-	# look for a url in the incoming text
-	#
-	urls = handlers.detect_valid_urls(msg)
-	if not urls:
+		dst = channel
+
+	matches = re.search(
+		r'^ticker:?\s+([a-z0-9_.-^]+)\s*$',
+		msg,
+		re.I
+	)
+
+	if not matches:
 		return
 
-	for url in urls:
-		try:
-			url, title = handlers.processurl(url)
-		except requests.exceptions.ConnectionError:
-			error(f'{url} failed to fetch')
-			continue
+	symbol = matches.group(1).lower()
+	try:
+		msg = fetch_quote(symbol)
 
-		except Exception as e:
-			logException(e)
-			continue
+	except Exception as e:
+		log(f'stock() failed to fetch symbol {symbol}, {e!s}')
+		self.msg(dst, "Failed to fetch symbol data.")
+		return
 
-		self.msg(channel, f'{url} [{title}]')
+	self.msg(dst, msg, only=True)
 
-	raise core.StopCallBacks
 
 
 core.register_module(__name__)

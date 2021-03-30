@@ -35,45 +35,48 @@ import copy
 
 JSON_REPLIES = {
 	"getStreamingStatus": {
-		"data": [{
-			"id": "0",
-			"user_id": "1234567890",
-			"game_id": "458688",
-			"community_ids": [],
-			"type": "live",
-			"title": "Test Stream",
-			"viewer_count": 1,
-			"started_at": "2018-06-08T12:56:28Z",
-			"language": "en",
-			"thumbnail_url": "foo"
+		"data":[{
+			"id":"0",
+			"user_id":"1234567890",
+			"user_name":"test1",
+			"game_id":"509658",
+			"game_name":"Just Chatting",
+			"type":"live",
+			"title":"Test Stream",
+			"viewer_count":1,
+			"started_at":"2018-06-08T12:56:28Z",
+			"language":"en",
+			"thumbnail_url":"foo",
+			"tag_ids":["f08d5873-f0c7-4912-94ba-a41933b4c141"]
 		},
 		{
-			"id": "1",
-			"user_id": "1234567891",
-			"game_id": "458688",
-			"community_ids": [],
-			"type": "live",
-			"title": "Test Stream 2",
-			"viewer_count": 1,
-			"started_at": "2018-06-08T12:56:28Z",
-			"language": "en",
-			"thumbnail_url": "bar"
+			"id":"1",
+			"user_id":"1234567891",
+			"user_name":"test2",
+			"game_id":"509658",
+			"game_name":"Just Chatting",
+			"type":"live",
+			"title":"Test Stream 2",
+			"viewer_count":1,
+			"started_at":"2018-06-08T12:56:28Z",
+			"language":"en",
+			"thumbnail_url":"foo",
+			"tag_ids":["f08d5873-f0c7-4912-94ba-a41933b4c141"]
 		}],
-		"pagination": {
-			"cursor": ""
-		}
+		"pagination": {}
 	},
-	"getUserId": {
-		"data":[{
+	'getUserId': {
+		"data": [{
 			"id":"1234567890",
 			"login":"test1",
 			"display_name":"Test One",
 			"type":"",
-			"broadcaster_type":"",
+			"broadcaster_type":"affiliate",
 			"description":"",
-			"profile_image_url":"",
-			"offline_image_url":"",
-			"view_count":9192128
+			"profile_image_url":"foo",
+			"offline_image_url":"bar",
+			"view_count":155168,
+			"created_at":"2016-02-20T19:38:26.994499Z"
 		}]
 	}
 }

@@ -1,7 +1,6 @@
-# coding: utf-8
-"""__init__.py - (c) 2013 - 2021 Matthew J. Ernisse <matt@going-flying.com>
+''' dice.py (c) 2021 Matthew J. Ernisse <matt@going-flying.com>
 
-Catch, log, and pretty-print urls.
+Roll some dice.
 
 Redistribution and use in source and binary forms,
 with or without modification, are permitted provided
@@ -26,43 +25,74 @@ OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-"""
+'''
+
 import core
-import requests
-from botlogger import debug, err, log, logException
+import random
+import re
 
-from . import handlers
-
-__all__ = ["handlers"]
+from botlogger import *
 
 
 def privmsg(self, user, channel, msg):
-	''' Module hook function for the ircbot.  Called on receipt of
-	a privmsg.
-	'''
-	speaker = user.split('!', 1)[0]
+	dst = user.split('!', 1)[0]
+	if channel != self.nickname:
+		msg = self._forMe(msg)
+		if not msg:
+			return
 
-	#
-	# look for a url in the incoming text
-	#
-	urls = handlers.detect_valid_urls(msg)
-	if not urls:
+		dst = channel
+
+	matches = re.search(
+		r'(?P<cnt>\d+)?\s*[dD](?P<sides>\d+)(\s*\+(?P<add>\d+))?',
+		msg,
+		re.I
+	)
+
+	if not matches:
 		return
 
-	for url in urls:
-		try:
-			url, title = handlers.processurl(url)
-		except requests.exceptions.ConnectionError:
-			error(f'{url} failed to fetch')
-			continue
+	add = matches.group('add')
+	cnt = matches.group('cnt')
+	sides = matches.group('sides')
 
-		except Exception as e:
-			logException(e)
-			continue
+	try:
+		sides = int(sides)
+	except Exception:
+		return
 
-		self.msg(channel, f'{url} [{title}]')
+	if sides > 100 or sides < 2:
+		return
 
-	raise core.StopCallBacks
+	if not add:
+		add = 0
+	else:
+		add = int(add)
+
+	if not cnt:
+		cnt = 1
+	else:
+		cnt = int(cnt)
+
+	result = 0
+	rolls = []
+	for x in range(0, cnt):
+		roll = random.randint(1, sides)
+		rolls.append(str(roll))
+		result += roll
+
+	result += add
+	rolls = ', '.join(rolls)
+
+	msg_add = ''
+	if add > 0:
+		msg_add = f' and added {add}'
+
+	self.msg(
+		dst,
+		f'Rolled {cnt} D{sides} ({rolls}){msg_add}, and got {result}.',
+		only=True
+	)
 
 
 core.register_module(__name__)

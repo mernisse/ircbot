@@ -1,8 +1,9 @@
+#!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
-''' test_all.py (c) 2018 Matthew J Ernisse <matt@going-flying.com>
+'''test_dices.py (c) 2018-2021 Matthew J Ernisse <matt@going-flying.com>
 All Rights Reserved.
 
-Unit tests for the uberurls module.
+Unit tests for the irc bot modules.
 
 Redistribution and use in source and binary forms,
 with or without modification, are permitted provided
@@ -28,50 +29,53 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
+import re
+import sys
 import unittest
 
+import dice
 import core
-import uberurls
 
-class MockIrcBot(object):
-	def __init__(self):
-		self.result = []
+sys.path.append("tests")
+import utils
 
-	def msg(self, target, msg):
-		self.result.append((target, msg))
-		
 
-class UberUrlsTestCase(unittest.TestCase):
+class DiceTests(unittest.TestCase):
+	def parseDiceReply(self, expect_low, expect_high):
+		matches = re.search(
+			r'and got (?P<result>\d+)\.',
+			self.bot.messages[0][1]
+		)
+
+		self.assertIsNot(matches, None)
+
+		result = int(matches.group('result'))
+		self.assertTrue(result >= expect_low)
+		self.assertTrue(result <= expect_high)
+
 	def setUp(self):
-		self.bot = MockIrcBot()
-		self.channel = "#test"
-		self.user = "test!test.host"
+		self.bot = utils.StubIrcRobot()
 
-	def testRedirectUrl(self):
-		''' Should successfully follow HTTP redirects. '''
-		expected = [(
-			self.channel,
-			'http://www.ub3rgeek.net/ [Matthew Ernisse]'
-		)]
-		msg = "http://www.ub3rgeek.net/"
-		with self.assertRaises(core.StopCallBacks):
-			uberurls.privmsg(self.bot, self.user, self.channel, msg)
+	def testDiceOnly(self):
+		dice.privmsg(self.bot, "test", "#test", "testbotnick: d4")
+		self.parseDiceReply(1, 4)
 
-		self.assertEqual(self.bot.result, expected)
+	def testDicePlus(self):
+		dice.privmsg(self.bot, "test", "#test", "testbotnick: d4+4")
+		self.parseDiceReply(5, 8)
 
-	def testNonExistentUrl(self):
-		''' Should not speak if the URL fails to load. '''
-		expected = []
-		msg = "http://foobar.baz"
-		with self.assertRaises(Exception):
-			uberurls.privmsg(self.bot, self.user, self.channel, msg)
+	def testSeveralDicePlus(self):
+		dice.privmsg(self.bot, "test", "#test", "testbotnick: 4d4+4")
+		self.parseDiceReply(8, 20)
 
-		self.assertEqual(self.bot.result, expected)
+	def testIgnoresNonDirected(self):
+		dice.privmsg(self.bot, "test", "#test", "d4")
+		self.assertEqual(self.bot.messages, [])
 
-	def testNoUrlMsg(self):
-		''' Should not speak if there is no URL in the message. '''
-		expected = []
-		msg = ""
-		uberurls.privmsg(self.bot, self.user, self.channel, msg)
-		self.assertEqual(self.bot.result, expected)
-	
+	def testIgnoresTooFewSides(self):
+		dice.privmsg(self.bot, "test", "#test", "testbotnick: d1")
+		self.assertEqual(self.bot.messages, [])
+
+	def testIgnoresTooManySides(self):
+		dice.privmsg(self.bot, "test", "#test", "testbotnick: d101")
+		self.assertEqual(self.bot.messages, [])

@@ -62,17 +62,20 @@ class TwitchTests(unittest.TestCase):
 
 	def testTwitchUserNewStream(self):
 		_newStream = {
-			"id": "2",
-			"user_id": "1234567891",
-			"game_id": "458688",
-			"community_ids": [],
-			"type": "live",
-			"title": "Test Stream 3",
-			"viewer_count": 1,
-			"started_at": "2018-06-08T12:56:30Z",
-			"language": "en",
-			"thumbnail_url": "bar"
-		}
+                        "id":"2",
+                        "user_id":"1234567891",
+                        "user_name":"test1",
+                        "game_id":"509658",
+                        "game_name":"Just Chatting",
+                        "type":"live",
+                        "title":"Test Stream 3",
+                        "viewer_count":2864,
+                        "started_at":"2021-01-06T14:13:17Z",
+                        "language":"en",
+                        "thumbnail_url":"",
+                        "tag_ids":["f08d5873-f0c7-4912-94ba-a41933b4c141"]
+                }
+
 		twitchNotifier.periodic(self.bot)
 		self.bot.clear()
 		self.twitchClient._getStreamingStatusReply["data"].pop()

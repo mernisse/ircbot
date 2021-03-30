@@ -41,30 +41,69 @@ def _getSoup(url):
 	response = requests.get(url)
 	return bs4.BeautifulSoup(response.text, "html5lib")
 
+
+def _unwrap(t):
+	return [x[1] for x in t]
+
 class CoreTestCase(unittest.TestCase):
+	def testValidGeminiUrl(self):
+		''' Should parse fully formed gemini URL. '''
+		expected = ["gemini://example.com"]
+		msg = "This is an example url gemini://example.com"
+		result = _unwrap(handlers.detect_valid_urls(msg))
+		self.assertEqual(expected, result)
+
 	def testValidHttpsUrl(self):
+		''' Should parse fully formed HTTP URL. '''
 		expected = ["https://www.example.com"]
 		msg = "This is an example url https://www.example.com"
-		result = handlers.core.detect_valid_urls(msg)
+		result = _unwrap(handlers.detect_valid_urls(msg))
 		self.assertEqual(expected, result)
 
 	def testInvalidUrl(self):
+		''' Should not speak just because a domain name is said. '''
 		expected = []
 		msg = "This is some example.com bs."
-		result = handlers.core.detect_valid_urls(msg)
+		result = _unwrap(handlers.detect_valid_urls(msg))
 		self.assertEqual(expected, result)
 
 	def testSchemelessUrl(self):
-		expected = ["www.example.com"]
+		''' Should process a domain name starting with www. '''
+		expected = ["https://www.example.com"]
 		msg = "What about www.example.com"
-		result = handlers.core.detect_valid_urls(msg)
+		result = _unwrap(handlers.detect_valid_urls(msg))
+		self.assertEqual(expected, result)
+
+	def testSchemelessGeminiUrl(self):
+		''' Should process a domain name starting with gemini. '''
+		expected = ["gemini://gemini.example.com"]
+		msg = "What about gemini.example.com"
+		result = _unwrap(handlers.detect_valid_urls(msg))
+		self.assertEqual(expected, result)
+
+	def testMultipleUrls(self):
+		''' Should process multiple urls in a message. '''
+		expected = [
+			"https://www.example.com",
+			"gemini://gemini.example.com"
+		]
+		msg = "What about www.example.com vs gemini.example.com"
+		result = _unwrap(handlers.detect_valid_urls(msg))
 		self.assertEqual(expected, result)
 
 	def testGetTitle(self):
+		''' Should parse HTML and get a title. '''
 		expected = "This is a Title"
 		html = "<html><head><title>This is a Title       </title>"
 		soup = bs4.BeautifulSoup(html, "html5lib")
-		result = handlers.core.load_title("", soup)
+		result = handlers.load_title("https://www.example.com/", soup)
+		self.assertEqual(expected, result)
+
+	def testGeminiProxyUrl(self):
+		''' Should create a https to gemini proxy url. '''
+		expected = 'https://proxy.vulpes.one/gemini/gemini.example.com/'
+		url = 'gemini://gemini.example.com/'
+		result = handlers.load_title(url, '')
 		self.assertEqual(expected, result)
 
 

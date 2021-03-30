@@ -1,7 +1,7 @@
 # coding: utf-8
-"""__init__.py - (c) 2013 - 2021 Matthew J. Ernisse <matt@going-flying.com>
+'''gemini.py (c) 2021 Matthew J Ernisse <matt@going-flying.com>
 
-Catch, log, and pretty-print urls.
+Base handler for gemini:// urls.
 
 Redistribution and use in source and binary forms,
 with or without modification, are permitted provided
@@ -26,43 +26,53 @@ OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-"""
-import core
-import requests
-from botlogger import debug, err, log, logException
-
-from . import handlers
-
-__all__ = ["handlers"]
+'''
+import re
+import ignition
+from botlogger import log, logException
+from urllib.parse import urlparse
 
 
-def privmsg(self, user, channel, msg):
-	''' Module hook function for the ircbot.  Called on receipt of
-	a privmsg.
-	'''
-	speaker = user.split('!', 1)[0]
+def detect_valid_urls(s):
+	''' Return a list of Gemini URLs extracted from a string. '''
+	r = re.compile(r'((?:gemini://|gemini\.)[-\w\d+&@#/\\%=~_|$?!:;,.]*[-\w\d+&@#/\\%=~_|$])', re.I)
 
-	#
-	# look for a url in the incoming text
-	#
-	urls = handlers.detect_valid_urls(msg)
-	if not urls:
-		return
+	matches = r.findall(s)
+	if not matches:
+		return []
 
-	for url in urls:
-		try:
-			url, title = handlers.processurl(url)
-		except requests.exceptions.ConnectionError:
-			error(f'{url} failed to fetch')
-			continue
+	ret = []
+	for match in matches:
+		parsed = urlparse(match)
+		if not parsed.scheme:
+			match = f'gemini://{match}'
 
-		except Exception as e:
-			logException(e)
-			continue
+		ret.append(match)
 
-		self.msg(channel, f'{url} [{title}]')
-
-	raise core.StopCallBacks
+	return ret
 
 
-core.register_module(__name__)
+def processurl(url):
+	''' try to fetch a url from the smol interwebs. '''
+	parsed = urlparse(url)
+	if parsed.scheme is not 'gemini' \
+		and not parsed.netloc.startswith('gemini'):
+			return None
+
+	response = ignition.request(url)
+	if not response.success():
+		log(f'There was an error fetching {url}')
+		raise Exception('Error fetching {url}')
+
+	log(f'gemini.processurl(): loaded {url}')
+	return url
+
+
+def load_title(url, _):
+	''' Return the https proxy url for the page. '''
+	parsed = urlparse(url)
+	if parsed.scheme is not 'gemini' \
+		and not parsed.netloc.startswith('gemini'):
+		return None
+
+	return f'https://proxy.vulpes.one/gemini/{parsed.netloc}{parsed.path}'

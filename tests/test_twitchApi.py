@@ -61,7 +61,7 @@ class TwitchApiStreamTests(unittest.TestCase):
 		self.assertEqual(self.stream.userId, "1234567890")
 		self.assertEqual(
 			1,
-			 self.twitchApi.getUserId.call_count
+			self.twitchApi.getUserId.call_count
 		)
 
 	def testStreamRefreshException(self):
@@ -78,7 +78,7 @@ class TwitchApiStreamTests(unittest.TestCase):
 		self.assertTrue(self.stream.live)
 		self.assertEqual(
 			1,
-			 self.twitchApi.getStreamingStatus.call_count
+			self.twitchApi.getStreamingStatus.call_count
 		)
 
 		self.assertTrue(self.stream.live)

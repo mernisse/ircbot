@@ -187,9 +187,7 @@ class TwitchClient(object):
 		try:
 			userId = jsonStatus["data"][0]["id"]
 		except Exception as e:
-			raise ValueError("API failure fetching {}".format(
-				userName
-			))
+			raise ValueError(f"API failure fetching {userName}")
 
 		return userId
 
@@ -226,7 +224,6 @@ class TwitchClient(object):
 				timeout=1
 			)
 			response.raise_for_status()
-			print(response.json())
 			return response.json()
 
 		except requests.exceptions.Timeout:
