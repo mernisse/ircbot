@@ -1,10 +1,5 @@
 A small IRC robot in Python based on Twisted Words.
 
-Now with Python 3.
-
-Modules are all callback based, fired from the main Twisted Client
-object's loop.  There is a periodic call that is fired every 5 minutes.
-
-A number of interesting modules that I use are also included.
-
-See API.txt for information about the optional api.py WebSocket API.
+**Please note that this repository is depricated.  Please see
+(this repository)[https://ssl.ub3rgeek.net/git/?p=ircbot.git;a=summary]
+instead.**
